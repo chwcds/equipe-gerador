@@ -504,7 +504,7 @@ function htmlItem(it){
   if (it._bloqueado){
     return `<div class="item bloqueado respondido" data-item="${esc(it.id)}">
       <div class="enunciado">${esc(it.pergunta)}</div>
-      <div class="valor-fixo">${esc(r == null || r === '' ? '—' : r)} <span class="tag cadastrado">dado da loja</span></div>
+      <div class="valor-fixo">${esc(r == null || r === '' ? '—' : r)}</div>
     </div>`;
   }
   const prio = it.prioridade ? `<span class="tag ${CLASSE_PRIO[it.prioridade]||'media'}">${esc(it.prioridade)}</span>` : '';
