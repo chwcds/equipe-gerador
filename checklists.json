@@ -161,8 +161,22 @@
      "cond": null
     },
     {
-     "id": "rg_corrente_a",
+     "id": "rg_tensao_flutuacao_bat",
      "n": "10",
+     "secao": "Medições",
+     "pergunta": "Qual a tensão de flutuação da bateria (V)?",
+     "tipo": "numero",
+     "opcoes": [],
+     "foto": {
+      "sempre": true
+     },
+     "obs": false,
+     "prioridade": null,
+     "cond": null
+    },
+    {
+     "id": "rg_corrente_a",
+     "n": "11",
      "secao": "Medições",
      "pergunta": "10. Corrente fase A B C do gerador operando",
      "tipo": "numero",
@@ -176,7 +190,7 @@
     },
     {
      "id": "rg_usca_auto",
-     "n": "11",
+     "n": "12",
      "secao": "Fechamento",
      "pergunta": "13. USCA na posição Auto?",
      "tipo": "opcoes",
@@ -336,8 +350,22 @@
      "cond": null
     },
     {
-     "id": "rg_corrente_a",
+     "id": "rg_tensao_flutuacao_bat",
      "n": "9",
+     "secao": "Medições",
+     "pergunta": "Tensão de flutuação da bateria (V)?",
+     "tipo": "numero",
+     "opcoes": [],
+     "foto": {
+      "sempre": true
+     },
+     "obs": false,
+     "prioridade": null,
+     "cond": null
+    },
+    {
+     "id": "rg_corrente_a",
+     "n": "10",
      "secao": "Medições",
      "pergunta": "10. Corrente fase A B C do gerador operando",
      "tipo": "numero",
@@ -351,7 +379,7 @@
     },
     {
      "id": "pg_int_filtro_oleo",
-     "n": "10",
+     "n": "11",
      "secao": "Intervenções da Preventiva",
      "pergunta": "Foi trocado o filtro de óleo?",
      "tipo": "opcoes",
@@ -366,7 +394,7 @@
     },
     {
      "id": "pg_int_filtro_oleo_modelo",
-     "n": "11",
+     "n": "12",
      "secao": "Intervenções da Preventiva",
      "pergunta": "Qual modelo do filtro de óleo?",
      "tipo": "texto",
@@ -380,7 +408,7 @@
     },
     {
      "id": "pg_int_filtro_ar",
-     "n": "12",
+     "n": "13",
      "secao": "Intervenções da Preventiva",
      "pergunta": "Foi trocado o filtro de ar?",
      "tipo": "opcoes",
@@ -395,7 +423,7 @@
     },
     {
      "id": "pg_int_filtro_ar_modelo",
-     "n": "13",
+     "n": "14",
      "secao": "Intervenções da Preventiva",
      "pergunta": "Qual modelo do filtro de ar?",
      "tipo": "texto",
@@ -409,7 +437,7 @@
     },
     {
      "id": "pg_int_possui_filtro_agua",
-     "n": "14",
+     "n": "15",
      "secao": "Intervenções da Preventiva",
      "pergunta": "Gerador possui filtro de água?",
      "tipo": "opcoes",
@@ -426,7 +454,7 @@
     },
     {
      "id": "pg_int_filtro_agua_modelo",
-     "n": "15",
+     "n": "16",
      "secao": "Intervenções da Preventiva",
      "pergunta": "Qual modelo do filtro de água?",
      "tipo": "texto",
@@ -443,7 +471,7 @@
     },
     {
      "id": "pg_int_oleo_motor",
-     "n": "16",
+     "n": "17",
      "secao": "Intervenções da Preventiva",
      "pergunta": "Foi trocado o óleo lubrificante do motor?",
      "tipo": "opcoes",
@@ -458,7 +486,7 @@
     },
     {
      "id": "pg_int_qtd_litros_oleo",
-     "n": "17",
+     "n": "18",
      "secao": "Intervenções da Preventiva",
      "pergunta": "Quantos litros de óleo lubrificante foram colocados no gerador?",
      "tipo": "numero",
@@ -472,7 +500,7 @@
     },
     {
      "id": "pg_int_qtd_baterias_trocadas",
-     "n": "18",
+     "n": "19",
      "secao": "Intervenções da Preventiva",
      "pergunta": "Quantas baterias foram trocadas?",
      "tipo": "opcoes",
@@ -490,7 +518,7 @@
     },
     {
      "id": "pg_int_carregador_bat",
-     "n": "19",
+     "n": "20",
      "secao": "Intervenções da Preventiva",
      "pergunta": "O carregador de bateria está ligado e operando corretamente?",
      "tipo": "opcoes",
@@ -507,7 +535,7 @@
     },
     {
      "id": "pg_obs_fechamento",
-     "n": "20",
+     "n": "21",
      "secao": "Fechamento",
      "pergunta": "Observações adicional da preventiva",
      "tipo": "opcoes",
@@ -524,7 +552,7 @@
     },
     {
      "id": "pg_usca_auto",
-     "n": "21",
+     "n": "22",
      "secao": "Fechamento",
      "pergunta": "USCA na posição Auto?",
      "tipo": "opcoes",
@@ -934,8 +962,7 @@
      "rg_usca_controlador": "Outro",
      "rg_potencia_kva": "313",
      "rg_tensao_v": "380",
-     "rg_qtd_baterias": "2 Baterias",
-     "rg_tensao_flutuacao_bat": "27.6"
+     "rg_qtd_baterias": "2 Baterias"
     }
    }
   },
@@ -952,8 +979,7 @@
      "rg_usca_controlador": "KVA",
      "rg_potencia_kva": "55",
      "rg_tensao_v": "380",
-     "rg_qtd_baterias": "1 Bateria",
-     "rg_tensao_flutuacao_bat": "13.2"
+     "rg_qtd_baterias": "1 Bateria"
     }
    }
   },
@@ -969,8 +995,7 @@
      "rg_fab_alternador": "Stamford",
      "rg_potencia_kva": "313",
      "rg_tensao_v": "380",
-     "rg_qtd_baterias": "2 Baterias",
-     "rg_tensao_flutuacao_bat": "26.8"
+     "rg_qtd_baterias": "2 Baterias"
     }
    }
   },
@@ -987,8 +1012,7 @@
      "rg_usca_controlador": "Deep Sea",
      "rg_potencia_kva": "150",
      "rg_tensao_v": "220",
-     "rg_qtd_baterias": "1 Bateria",
-     "rg_tensao_flutuacao_bat": "13.2"
+     "rg_qtd_baterias": "1 Bateria"
     }
    }
   },
@@ -1005,8 +1029,7 @@
      "rg_usca_controlador": "Deep Sea",
      "rg_potencia_kva": "260",
      "rg_tensao_v": "220",
-     "rg_qtd_baterias": "2 Baterias",
-     "rg_tensao_flutuacao_bat": "27.7"
+     "rg_qtd_baterias": "2 Baterias"
     }
    }
   },
@@ -1023,8 +1046,7 @@
      "rg_usca_controlador": "KVA",
      "rg_potencia_kva": "150",
      "rg_tensao_v": "220",
-     "rg_qtd_baterias": "1 Bateria",
-     "rg_tensao_flutuacao_bat": "13.5"
+     "rg_qtd_baterias": "1 Bateria"
     }
    }
   },
@@ -1041,8 +1063,7 @@
      "rg_usca_controlador": "Stemac",
      "rg_potencia_kva": "180",
      "rg_tensao_v": "220",
-     "rg_qtd_baterias": "1 Bateria",
-     "rg_tensao_flutuacao_bat": "13.5"
+     "rg_qtd_baterias": "1 Bateria"
     }
    }
   },
@@ -1059,8 +1080,7 @@
      "rg_usca_controlador": "Stemac",
      "rg_potencia_kva": "450",
      "rg_tensao_v": "380",
-     "rg_qtd_baterias": "2 Baterias",
-     "rg_tensao_flutuacao_bat": "27.5"
+     "rg_qtd_baterias": "2 Baterias"
     }
    }
   },
@@ -1077,8 +1097,7 @@
      "rg_usca_controlador": "Stemac",
      "rg_potencia_kva": "325",
      "rg_tensao_v": "220",
-     "rg_qtd_baterias": "2 Baterias",
-     "rg_tensao_flutuacao_bat": "26.7"
+     "rg_qtd_baterias": "2 Baterias"
     }
    }
   },
@@ -1095,8 +1114,7 @@
      "rg_usca_controlador": "Outro",
      "rg_potencia_kva": "313",
      "rg_tensao_v": "380",
-     "rg_qtd_baterias": "2 Baterias",
-     "rg_tensao_flutuacao_bat": "26.8"
+     "rg_qtd_baterias": "2 Baterias"
     }
    }
   },
@@ -1113,8 +1131,7 @@
      "rg_usca_controlador": "Outro",
      "rg_potencia_kva": "313",
      "rg_tensao_v": "220",
-     "rg_qtd_baterias": "2 Baterias",
-     "rg_tensao_flutuacao_bat": "27.3"
+     "rg_qtd_baterias": "2 Baterias"
     }
    }
   },
@@ -1131,8 +1148,7 @@
      "rg_usca_controlador": "KVA",
      "rg_potencia_kva": "150",
      "rg_tensao_v": "380",
-     "rg_qtd_baterias": "1 Bateria",
-     "rg_tensao_flutuacao_bat": "13.6"
+     "rg_qtd_baterias": "1 Bateria"
     }
    }
   },
@@ -1149,8 +1165,7 @@
      "rg_usca_controlador": "Deep Sea",
      "rg_potencia_kva": "325",
      "rg_tensao_v": "380",
-     "rg_qtd_baterias": "2 Baterias",
-     "rg_tensao_flutuacao_bat": "26.9"
+     "rg_qtd_baterias": "2 Baterias"
     }
    }
   },
@@ -1167,8 +1182,7 @@
      "rg_usca_controlador": "Outro",
      "rg_potencia_kva": "313",
      "rg_tensao_v": "380",
-     "rg_qtd_baterias": "2 Baterias",
-     "rg_tensao_flutuacao_bat": "27.4"
+     "rg_qtd_baterias": "2 Baterias"
     }
    }
   },
@@ -1184,8 +1198,7 @@
      "rg_fab_alternador": "Stamford",
      "rg_potencia_kva": "313",
      "rg_tensao_v": "380",
-     "rg_qtd_baterias": "2 Baterias",
-     "rg_tensao_flutuacao_bat": "27.6"
+     "rg_qtd_baterias": "2 Baterias"
     }
    }
   },
@@ -1202,8 +1215,7 @@
      "rg_usca_controlador": "Outro",
      "rg_potencia_kva": "313",
      "rg_tensao_v": "380",
-     "rg_qtd_baterias": "2 Baterias",
-     "rg_tensao_flutuacao_bat": "27.5"
+     "rg_qtd_baterias": "2 Baterias"
     }
    }
   },
@@ -1219,8 +1231,7 @@
      "rg_fab_alternador": "Stamford",
      "rg_potencia_kva": "313",
      "rg_tensao_v": "380",
-     "rg_qtd_baterias": "2 Baterias",
-     "rg_tensao_flutuacao_bat": "27.4"
+     "rg_qtd_baterias": "2 Baterias"
     }
    }
   },
@@ -1249,8 +1260,7 @@
      "rg_usca_controlador": "Outro",
      "rg_potencia_kva": "313",
      "rg_tensao_v": "380",
-     "rg_qtd_baterias": "2 Baterias",
-     "rg_tensao_flutuacao_bat": "26.6"
+     "rg_qtd_baterias": "2 Baterias"
     }
    }
   },
@@ -1267,8 +1277,7 @@
      "rg_usca_controlador": "KVA",
      "rg_potencia_kva": "400",
      "rg_tensao_v": "380",
-     "rg_qtd_baterias": "2 Baterias",
-     "rg_tensao_flutuacao_bat": "27.0"
+     "rg_qtd_baterias": "2 Baterias"
     }
    }
   },
@@ -1285,8 +1294,7 @@
      "rg_usca_controlador": "Deep Sea",
      "rg_potencia_kva": "315",
      "rg_tensao_v": "380",
-     "rg_qtd_baterias": "2 Baterias",
-     "rg_tensao_flutuacao_bat": "27.2"
+     "rg_qtd_baterias": "2 Baterias"
     }
    }
   },
@@ -1302,8 +1310,7 @@
      "rg_usca_controlador": "KVA",
      "rg_potencia_kva": "310",
      "rg_tensao_v": "220",
-     "rg_qtd_baterias": "2 Baterias",
-     "rg_tensao_flutuacao_bat": "27.5"
+     "rg_qtd_baterias": "2 Baterias"
     }
    }
   },
@@ -1320,8 +1327,7 @@
      "rg_usca_controlador": "KVA",
      "rg_potencia_kva": "450",
      "rg_tensao_v": "220",
-     "rg_qtd_baterias": "2 Baterias",
-     "rg_tensao_flutuacao_bat": "26.6"
+     "rg_qtd_baterias": "2 Baterias"
     }
    }
   }
@@ -1467,20 +1473,6 @@
      "2 Baterias"
     ],
     "foto": null,
-    "obs": false,
-    "prioridade": null,
-    "cond": null
-   },
-   {
-    "id": "rg_tensao_flutuacao_bat",
-    "n": "9",
-    "secao": "Dados técnicos",
-    "pergunta": "Qual a tensão de flutuação da bateria (V)?",
-    "tipo": "numero",
-    "opcoes": [],
-    "foto": {
-     "sempre": true
-    },
     "obs": false,
     "prioridade": null,
     "cond": null
