@@ -7,165 +7,8 @@
    "bloco": "Gerador",
    "itens": [
     {
-     "id": "rg_abrangencia",
-     "n": "1",
-     "secao": "Dados técnicos",
-     "pergunta": "Esse gerador é parcial ou total?",
-     "tipo": "opcoes",
-     "opcoes": [
-      "Total",
-      "Parcial"
-     ],
-     "foto": null,
-     "obs": false,
-     "prioridade": null,
-     "cond": null
-    },
-    {
-     "id": "rg_fabricante",
-     "n": "2",
-     "secao": "Dados técnicos",
-     "pergunta": "Fabricante do Gerador",
-     "tipo": "opcoes",
-     "opcoes": [
-      "Stemac",
-      "Cummins",
-      "MWM",
-      "Atlas Copco",
-      "Maxitrust",
-      "Rodo Agro",
-      "Outro"
-     ],
-     "foto": {
-      "sempre": true
-     },
-     "obs": false,
-     "prioridade": null,
-     "cond": null
-    },
-    {
-     "id": "rg_marca_motor",
-     "n": "3",
-     "secao": "Dados técnicos",
-     "pergunta": "Marca / Motor",
-     "tipo": "opcoes",
-     "opcoes": [
-      "Cummins",
-      "MWM",
-      "Perkins",
-      "Scania",
-      "Volvo Penta",
-      "Outro"
-     ],
-     "foto": {
-      "sempre": true
-     },
-     "obs": false,
-     "prioridade": null,
-     "cond": null
-    },
-    {
-     "id": "rg_fab_alternador",
-     "n": "4",
-     "secao": "Dados técnicos",
-     "pergunta": "Fabricante do alternador",
-     "tipo": "opcoes",
-     "opcoes": [
-      "WEG",
-      "Stamford",
-      "Mecc Alte",
-      "Outro"
-     ],
-     "foto": {
-      "sempre": true
-     },
-     "obs": false,
-     "prioridade": null,
-     "cond": null
-    },
-    {
-     "id": "rg_usca_controlador",
-     "n": "5",
-     "secao": "Dados técnicos",
-     "pergunta": "USCA / Controlador",
-     "tipo": "opcoes",
-     "opcoes": [
-      "Deep Sea",
-      "DEIF",
-      "Stemac",
-      "KVA",
-      "Outro"
-     ],
-     "foto": {
-      "sempre": true
-     },
-     "obs": false,
-     "prioridade": null,
-     "cond": null
-    },
-    {
-     "id": "rg_potencia_kva",
-     "n": "6",
-     "secao": "Dados técnicos",
-     "pergunta": "Potência (kVA)",
-     "tipo": "numero",
-     "opcoes": [],
-     "foto": {
-      "sempre": true
-     },
-     "obs": false,
-     "prioridade": null,
-     "cond": null
-    },
-    {
-     "id": "rg_tensao_v",
-     "n": "7",
-     "secao": "Dados técnicos",
-     "pergunta": "Tensão (V)",
-     "tipo": "opcoes",
-     "opcoes": [
-      "220",
-      "380"
-     ],
-     "foto": {
-      "sempre": true
-     },
-     "obs": false,
-     "prioridade": null,
-     "cond": null
-    },
-    {
-     "id": "rg_qtd_baterias",
-     "n": "8",
-     "secao": "Dados técnicos",
-     "pergunta": "Quantidade de Baterias",
-     "tipo": "opcoes",
-     "opcoes": [
-      "1 Bateria",
-      "2 Baterias"
-     ],
-     "foto": null,
-     "obs": false,
-     "prioridade": null,
-     "cond": null
-    },
-    {
-     "id": "rg_tensao_flutuacao_bat",
-     "n": "9",
-     "secao": "Dados técnicos",
-     "pergunta": "Qual a tensão de flutuação da bateria (V)?",
-     "tipo": "numero",
-     "opcoes": [],
-     "foto": {
-      "sempre": true
-     },
-     "obs": false,
-     "prioridade": null,
-     "cond": null
-    },
-    {
      "id": "rg_qta_composicao",
-     "n": "10",
+     "n": "1",
      "secao": "Sistema de transferência",
      "pergunta": "Composição do QTA",
      "tipo": "opcoes",
@@ -183,7 +26,7 @@
     },
     {
      "id": "rg_possui_qtm",
-     "n": "11",
+     "n": "2",
      "secao": "Sistema de transferência",
      "pergunta": "Gerador possui QTM?",
      "tipo": "opcoes",
@@ -200,7 +43,7 @@
     },
     {
      "id": "rg_q1",
-     "n": "12",
+     "n": "3",
      "secao": "Checklist de rotina",
      "pergunta": "1. Acessibilidade à sala desobstruída?",
      "tipo": "opcoes",
@@ -217,7 +60,7 @@
     },
     {
      "id": "rg_q2",
-     "n": "13",
+     "n": "4",
      "secao": "Checklist de rotina",
      "pergunta": "2. Existe vestígio de insetos ou roedores?",
      "tipo": "opcoes",
@@ -234,7 +77,7 @@
     },
     {
      "id": "rg_q5",
-     "n": "14",
+     "n": "5",
      "secao": "Checklist de rotina",
      "pergunta": "4. Gerador possui vazamentos de água ou óleo?",
      "tipo": "opcoes",
@@ -251,7 +94,7 @@
     },
     {
      "id": "rg_q6",
-     "n": "15",
+     "n": "6",
      "secao": "Checklist de rotina",
      "pergunta": "5. Baterias em bom estado?",
      "tipo": "opcoes",
@@ -268,7 +111,7 @@
     },
     {
      "id": "rg_q8",
-     "n": "17",
+     "n": "7",
      "secao": "Checklist de rotina",
      "pergunta": "7. Conferido nível de água do radiador?",
      "tipo": "opcoes",
@@ -283,7 +126,7 @@
     },
     {
      "id": "rg_q9",
-     "n": "18",
+     "n": "8",
      "secao": "Checklist de rotina",
      "pergunta": "8. Conferido nível de óleo lubrificante?",
      "tipo": "opcoes",
@@ -300,7 +143,7 @@
     },
     {
      "id": "rg_nivel_diesel",
-     "n": "19",
+     "n": "9",
      "secao": "Nível do diesel",
      "pergunta": "9. Nível de combustível no tanque",
      "tipo": "opcoes",
@@ -319,7 +162,7 @@
     },
     {
      "id": "rg_corrente_a",
-     "n": "20",
+     "n": "10",
      "secao": "Medições",
      "pergunta": "10. Corrente fase A B C do gerador operando",
      "tipo": "numero",
@@ -333,7 +176,7 @@
     },
     {
      "id": "rg_usca_auto",
-     "n": "21",
+     "n": "11",
      "secao": "Fechamento",
      "pergunta": "13. USCA na posição Auto?",
      "tipo": "opcoes",
@@ -356,150 +199,8 @@
    "bloco": "Gerador",
    "itens": [
     {
-     "id": "rg_abrangencia",
-     "n": "1",
-     "secao": "Dados técnicos",
-     "pergunta": "Esse gerador é total ou parcial?",
-     "tipo": "opcoes",
-     "opcoes": [
-      "Total",
-      "Parcial"
-     ],
-     "foto": null,
-     "obs": false,
-     "prioridade": null,
-     "cond": null
-    },
-    {
-     "id": "rg_fabricante",
-     "n": "2",
-     "secao": "Dados técnicos",
-     "pergunta": "Fabricante do Gerador",
-     "tipo": "opcoes",
-     "opcoes": [
-      "Stemac",
-      "Cummins",
-      "MWM",
-      "Atlas Copco",
-      "Maxitrust",
-      "Rodo Agro",
-      "Outro"
-     ],
-     "foto": {
-      "sempre": true
-     },
-     "obs": false,
-     "prioridade": null,
-     "cond": null
-    },
-    {
-     "id": "rg_marca_motor",
-     "n": "3",
-     "secao": "Dados técnicos",
-     "pergunta": "Modelo e marca motor  a combustão",
-     "tipo": "opcoes",
-     "opcoes": [
-      "Cummins",
-      "MWM",
-      "Perkins",
-      "Scania",
-      "Volvo Penta",
-      "Outro"
-     ],
-     "foto": {
-      "sempre": true
-     },
-     "obs": false,
-     "prioridade": null,
-     "cond": null
-    },
-    {
-     "id": "rg_fab_alternador",
-     "n": "4",
-     "secao": "Dados técnicos",
-     "pergunta": "Fabricante do alternador",
-     "tipo": "opcoes",
-     "opcoes": [
-      "WEG",
-      "Stamford",
-      "Mecc Alte",
-      "Outro"
-     ],
-     "foto": {
-      "sempre": true
-     },
-     "obs": false,
-     "prioridade": null,
-     "cond": null
-    },
-    {
-     "id": "rg_usca_controlador",
-     "n": "5",
-     "secao": "Dados técnicos",
-     "pergunta": "USCA / Controlador",
-     "tipo": "opcoes",
-     "opcoes": [
-      "Deep Sea",
-      "DEIF",
-      "Stemac",
-      "KVA",
-      "Outro"
-     ],
-     "foto": {
-      "sempre": true
-     },
-     "obs": false,
-     "prioridade": null,
-     "cond": null
-    },
-    {
-     "id": "rg_potencia_kva",
-     "n": "6",
-     "secao": "Dados técnicos",
-     "pergunta": "Potência (kVA)",
-     "tipo": "numero",
-     "opcoes": [],
-     "foto": {
-      "sempre": true
-     },
-     "obs": false,
-     "prioridade": null,
-     "cond": null
-    },
-    {
-     "id": "rg_tensao_v",
-     "n": "7",
-     "secao": "Dados técnicos",
-     "pergunta": "Tensão (V)",
-     "tipo": "opcoes",
-     "opcoes": [
-      "220",
-      "380"
-     ],
-     "foto": {
-      "sempre": true
-     },
-     "obs": false,
-     "prioridade": null,
-     "cond": null
-    },
-    {
-     "id": "rg_tensao_flutuacao_bat",
-     "n": "8",
-     "secao": "Dados técnicos",
-     "pergunta": "Tensão de flutuação da bateria (V)?",
-     "tipo": "numero",
-     "opcoes": [],
-     "foto": {
-      "sempre": true
-     },
-     "obs": false,
-     "prioridade": null,
-     "cond": null
-    },
-    {
      "id": "rg_qta_composicao",
-     "n": "9",
+     "n": "1",
      "secao": "Sistema de transferência",
      "pergunta": "Composição do QTA",
      "tipo": "opcoes",
@@ -517,7 +218,7 @@
     },
     {
      "id": "rg_possui_qtm",
-     "n": "10",
+     "n": "2",
      "secao": "Sistema de transferência",
      "pergunta": "Gerador possui QTM?",
      "tipo": "opcoes",
@@ -534,7 +235,7 @@
     },
     {
      "id": "rg_q1",
-     "n": "11",
+     "n": "3",
      "secao": "Checklist de rotina",
      "pergunta": "1. Acessibilidade à sala desobstruída?",
      "tipo": "opcoes",
@@ -551,7 +252,7 @@
     },
     {
      "id": "rg_q2",
-     "n": "12",
+     "n": "4",
      "secao": "Checklist de rotina",
      "pergunta": "2. Existe vestígio de insetos ou roedores?",
      "tipo": "opcoes",
@@ -568,7 +269,7 @@
     },
     {
      "id": "rg_q5",
-     "n": "13",
+     "n": "5",
      "secao": "Checklist de rotina",
      "pergunta": "4. Gerador possui vazamentos de água ou óleo?",
      "tipo": "opcoes",
@@ -585,7 +286,7 @@
     },
     {
      "id": "rg_q8",
-     "n": "14",
+     "n": "6",
      "secao": "Checklist de rotina",
      "pergunta": "7. Conferido nível de água do radiador?",
      "tipo": "opcoes",
@@ -600,7 +301,7 @@
     },
     {
      "id": "rg_q9",
-     "n": "15",
+     "n": "7",
      "secao": "Checklist de rotina",
      "pergunta": "8. Conferido nível de óleo lubrificante?",
      "tipo": "opcoes",
@@ -617,7 +318,7 @@
     },
     {
      "id": "rg_nivel_diesel",
-     "n": "16",
+     "n": "8",
      "secao": "Nível do diesel",
      "pergunta": "9. Nível de combustível no tanque",
      "tipo": "opcoes",
@@ -636,7 +337,7 @@
     },
     {
      "id": "rg_corrente_a",
-     "n": "17",
+     "n": "9",
      "secao": "Medições",
      "pergunta": "10. Corrente fase A B C do gerador operando",
      "tipo": "numero",
@@ -650,7 +351,7 @@
     },
     {
      "id": "pg_int_filtro_oleo",
-     "n": "18",
+     "n": "10",
      "secao": "Intervenções da Preventiva",
      "pergunta": "Foi trocado o filtro de óleo?",
      "tipo": "opcoes",
@@ -665,7 +366,7 @@
     },
     {
      "id": "pg_int_filtro_oleo_modelo",
-     "n": "19",
+     "n": "11",
      "secao": "Intervenções da Preventiva",
      "pergunta": "Qual modelo do filtro de óleo?",
      "tipo": "texto",
@@ -679,7 +380,7 @@
     },
     {
      "id": "pg_int_filtro_ar",
-     "n": "20",
+     "n": "12",
      "secao": "Intervenções da Preventiva",
      "pergunta": "Foi trocado o filtro de ar?",
      "tipo": "opcoes",
@@ -694,7 +395,7 @@
     },
     {
      "id": "pg_int_filtro_ar_modelo",
-     "n": "21",
+     "n": "13",
      "secao": "Intervenções da Preventiva",
      "pergunta": "Qual modelo do filtro de ar?",
      "tipo": "texto",
@@ -708,7 +409,7 @@
     },
     {
      "id": "pg_int_possui_filtro_agua",
-     "n": "22",
+     "n": "14",
      "secao": "Intervenções da Preventiva",
      "pergunta": "Gerador possui filtro de água?",
      "tipo": "opcoes",
@@ -725,7 +426,7 @@
     },
     {
      "id": "pg_int_filtro_agua_modelo",
-     "n": "23",
+     "n": "15",
      "secao": "Intervenções da Preventiva",
      "pergunta": "Qual modelo do filtro de água?",
      "tipo": "texto",
@@ -742,7 +443,7 @@
     },
     {
      "id": "pg_int_oleo_motor",
-     "n": "24",
+     "n": "16",
      "secao": "Intervenções da Preventiva",
      "pergunta": "Foi trocado o óleo lubrificante do motor?",
      "tipo": "opcoes",
@@ -757,7 +458,7 @@
     },
     {
      "id": "pg_int_qtd_litros_oleo",
-     "n": "25",
+     "n": "17",
      "secao": "Intervenções da Preventiva",
      "pergunta": "Quantos litros de óleo lubrificante foram colocados no gerador?",
      "tipo": "numero",
@@ -771,7 +472,7 @@
     },
     {
      "id": "pg_int_qtd_baterias_trocadas",
-     "n": "26",
+     "n": "18",
      "secao": "Intervenções da Preventiva",
      "pergunta": "Quantas baterias foram trocadas?",
      "tipo": "opcoes",
@@ -789,7 +490,7 @@
     },
     {
      "id": "pg_int_carregador_bat",
-     "n": "27",
+     "n": "19",
      "secao": "Intervenções da Preventiva",
      "pergunta": "O carregador de bateria está ligado e operando corretamente?",
      "tipo": "opcoes",
@@ -806,7 +507,7 @@
     },
     {
      "id": "pg_obs_fechamento",
-     "n": "28",
+     "n": "20",
      "secao": "Fechamento",
      "pergunta": "Observações adicional da preventiva",
      "tipo": "opcoes",
@@ -823,7 +524,7 @@
     },
     {
      "id": "pg_usca_auto",
-     "n": "29",
+     "n": "21",
      "secao": "Fechamento",
      "pergunta": "USCA na posição Auto?",
      "tipo": "opcoes",
@@ -1212,6 +913,578 @@
    ]
   }
  ],
- "tecnicos": [],
- "lojas": []
+ "tecnicos": [
+  "ANDREI PELOSI DE ANDRADE",
+  "THIAGO AUGUSTO FERREIRA",
+  "WAGNER CORDEIRO DA SILVA",
+  "RENATO ANTONIO GUIMARÃES",
+  "PEDRO HENRIQUE FERREIRA DA SILVA"
+ ],
+ "lojas": [
+  {
+   "cod": "D005",
+   "nome": "TIROL",
+   "endereco": "AV. EXPEDITO DE FARIA TAVARES, 32 LJ 01, MARILÂNDIA JATOBA (BARREIRO), BELO HORIZONTE - MG, BELO HORIZONTE - MG",
+   "dadosTecnicos": {
+    "Gerador": {
+     "rg_abrangencia": "Total",
+     "rg_fabricante": "Cummins",
+     "rg_marca_motor": "Cummins",
+     "rg_fab_alternador": "Stamford",
+     "rg_usca_controlador": "Outro",
+     "rg_potencia_kva": "313",
+     "rg_tensao_v": "380",
+     "rg_qtd_baterias": "2 Baterias",
+     "rg_tensao_flutuacao_bat": "27.6"
+    }
+   }
+  },
+  {
+   "cod": "D007",
+   "nome": "BARREIRO",
+   "endereco": "RUA CAETANO PIRRI, 110, MILIONÁRIOS (BARREIRO), BELO HORIZONTE - MG, BELO HORIZONTE - MG",
+   "dadosTecnicos": {
+    "Gerador": {
+     "rg_abrangencia": "Parcial",
+     "rg_fabricante": "Rodo Agro",
+     "rg_marca_motor": "Perkins",
+     "rg_fab_alternador": "WEG",
+     "rg_usca_controlador": "KVA",
+     "rg_potencia_kva": "55",
+     "rg_tensao_v": "380",
+     "rg_qtd_baterias": "1 Bateria",
+     "rg_tensao_flutuacao_bat": "13.2"
+    }
+   }
+  },
+  {
+   "cod": "D012",
+   "nome": "JARDIM VITÓRIA",
+   "endereco": "RUA DONA CHIQUINHA, 120, JARDIM VITÓRIA, BELO HORIZONTE - MG, BELO HORIZONTE - MG",
+   "dadosTecnicos": {
+    "Gerador": {
+     "rg_abrangencia": "Total",
+     "rg_fabricante": "Cummins",
+     "rg_marca_motor": "Cummins",
+     "rg_fab_alternador": "Stamford",
+     "rg_potencia_kva": "313",
+     "rg_tensao_v": "380",
+     "rg_qtd_baterias": "2 Baterias",
+     "rg_tensao_flutuacao_bat": "26.8"
+    }
+   }
+  },
+  {
+   "cod": "D028",
+   "nome": "TENENTE GARRO",
+   "endereco": "RUA TENENTE GARRO, 120, SANTA EFIGÊNIA, BELO HORIZONTE - MG, BELO HORIZONTE - MG",
+   "dadosTecnicos": {
+    "Gerador": {
+     "rg_abrangencia": "Total",
+     "rg_fabricante": "Stemac",
+     "rg_marca_motor": "MWM",
+     "rg_fab_alternador": "WEG",
+     "rg_usca_controlador": "Deep Sea",
+     "rg_potencia_kva": "150",
+     "rg_tensao_v": "220",
+     "rg_qtd_baterias": "1 Bateria",
+     "rg_tensao_flutuacao_bat": "13.2"
+    }
+   }
+  },
+  {
+   "cod": "D035",
+   "nome": "BARÃO H. MELO",
+   "endereco": "AV. BARÃO HOMEM DE MELO, 3095, ESTORIL, BELO HORIZONTE - MG, BELO HORIZONTE - MG",
+   "dadosTecnicos": {
+    "Gerador": {
+     "rg_abrangencia": "Total",
+     "rg_fabricante": "Stemac",
+     "rg_marca_motor": "Cummins",
+     "rg_fab_alternador": "Outro",
+     "rg_usca_controlador": "Deep Sea",
+     "rg_potencia_kva": "260",
+     "rg_tensao_v": "220",
+     "rg_qtd_baterias": "2 Baterias",
+     "rg_tensao_flutuacao_bat": "27.7"
+    }
+   }
+  },
+  {
+   "cod": "D039",
+   "nome": "SÃO GABRIEL",
+   "endereco": "RUA SÃO JOÃO DA SERRA, 30, SÃO GABRIEL, BELO HORIZONTE - MG, BELO HORIZONTE - MG",
+   "dadosTecnicos": {
+    "Gerador": {
+     "rg_abrangencia": "Total",
+     "rg_fabricante": "Stemac",
+     "rg_marca_motor": "MWM",
+     "rg_fab_alternador": "WEG",
+     "rg_usca_controlador": "KVA",
+     "rg_potencia_kva": "150",
+     "rg_tensao_v": "220",
+     "rg_qtd_baterias": "1 Bateria",
+     "rg_tensao_flutuacao_bat": "13.5"
+    }
+   }
+  },
+  {
+   "cod": "D068",
+   "nome": "SÃO LUCAS",
+   "endereco": "AV. DO CONTORNO, 4255, SÃO LUCAS, BELO HORIZONTE - MG, BELO HORIZONTE - MG",
+   "dadosTecnicos": {
+    "Gerador": {
+     "rg_abrangencia": "Parcial",
+     "rg_fabricante": "Stemac",
+     "rg_marca_motor": "MWM",
+     "rg_fab_alternador": "WEG",
+     "rg_usca_controlador": "Stemac",
+     "rg_potencia_kva": "180",
+     "rg_tensao_v": "220",
+     "rg_qtd_baterias": "1 Bateria",
+     "rg_tensao_flutuacao_bat": "13.5"
+    }
+   }
+  },
+  {
+   "cod": "D078",
+   "nome": "CASTELO",
+   "endereco": "AV. MIGUEL PERRELA, 987, CASTELO, BELO HORIZONTE - MG, BELO HORIZONTE - MG",
+   "dadosTecnicos": {
+    "Gerador": {
+     "rg_abrangencia": "Total",
+     "rg_fabricante": "Stemac",
+     "rg_marca_motor": "Scania",
+     "rg_fab_alternador": "WEG",
+     "rg_usca_controlador": "Stemac",
+     "rg_potencia_kva": "450",
+     "rg_tensao_v": "380",
+     "rg_qtd_baterias": "2 Baterias",
+     "rg_tensao_flutuacao_bat": "27.5"
+    }
+   }
+  },
+  {
+   "cod": "D084",
+   "nome": "SANTA LUZIA",
+   "endereco": "RUA DO CARMO, 165, PARQUE BOA ESPERANÇA, SANTA LUZIA - MG, SANTA LUZIA - MG",
+   "dadosTecnicos": {
+    "Gerador": {
+     "rg_abrangencia": "Total",
+     "rg_fabricante": "Stemac",
+     "rg_marca_motor": "Cummins",
+     "rg_fab_alternador": "WEG",
+     "rg_usca_controlador": "Stemac",
+     "rg_potencia_kva": "325",
+     "rg_tensao_v": "220",
+     "rg_qtd_baterias": "2 Baterias",
+     "rg_tensao_flutuacao_bat": "26.7"
+    }
+   }
+  },
+  {
+   "cod": "D099",
+   "nome": "PETROPOLIS",
+   "endereco": "AV. SENADOR LEVINDO COELHO, 3321, PETRÓPOLIS (BARREIRO), BELO HORIZONTE - MG, BELO HORIZONTE - MG",
+   "dadosTecnicos": {
+    "Gerador": {
+     "rg_abrangencia": "Total",
+     "rg_fabricante": "Cummins",
+     "rg_marca_motor": "Cummins",
+     "rg_fab_alternador": "Stamford",
+     "rg_usca_controlador": "Outro",
+     "rg_potencia_kva": "313",
+     "rg_tensao_v": "380",
+     "rg_qtd_baterias": "2 Baterias",
+     "rg_tensao_flutuacao_bat": "26.8"
+    }
+   }
+  },
+  {
+   "cod": "D106",
+   "nome": "INDEPENDÊNCIA",
+   "endereco": "RUA MARIZA AFONSO, 226, INDEPENDÊNCIA (BARREIRO), BELO HORIZONTE - MG, BELO HORIZONTE - MG",
+   "dadosTecnicos": {
+    "Gerador": {
+     "rg_abrangencia": "Total",
+     "rg_fabricante": "Cummins",
+     "rg_marca_motor": "Cummins",
+     "rg_fab_alternador": "Stamford",
+     "rg_usca_controlador": "Outro",
+     "rg_potencia_kva": "313",
+     "rg_tensao_v": "220",
+     "rg_qtd_baterias": "2 Baterias",
+     "rg_tensao_flutuacao_bat": "27.3"
+    }
+   }
+  },
+  {
+   "cod": "D109",
+   "nome": "SANTA LUZIA",
+   "endereco": "RUA JAIME CARLOS AFONSO TEIXEIRA, 29, BELA VISTA, SANTA LUZIA - MG, SANTA LUZIA - MG",
+   "dadosTecnicos": {
+    "Gerador": {
+     "rg_abrangencia": "Parcial",
+     "rg_fabricante": "Rodo Agro",
+     "rg_marca_motor": "Outro",
+     "rg_fab_alternador": "WEG",
+     "rg_usca_controlador": "KVA",
+     "rg_potencia_kva": "150",
+     "rg_tensao_v": "380",
+     "rg_qtd_baterias": "1 Bateria",
+     "rg_tensao_flutuacao_bat": "13.6"
+    }
+   }
+  },
+  {
+   "cod": "D113",
+   "nome": "BR040",
+   "endereco": "RUA TRINTA E SETE, 152, SAN MARINO, RIBEIRÃO DAS NEVES - MG, RIBEIRÃO DAS NEVES - MG",
+   "dadosTecnicos": {
+    "Gerador": {
+     "rg_abrangencia": "Total",
+     "rg_fabricante": "Stemac",
+     "rg_marca_motor": "Scania",
+     "rg_fab_alternador": "WEG",
+     "rg_usca_controlador": "Deep Sea",
+     "rg_potencia_kva": "325",
+     "rg_tensao_v": "380",
+     "rg_qtd_baterias": "2 Baterias",
+     "rg_tensao_flutuacao_bat": "26.9"
+    }
+   }
+  },
+  {
+   "cod": "D125",
+   "nome": "BETÂNIA",
+   "endereco": "RUA ÚRSULA PAULINO, 1321, BETÂNIA, BELO HORIZONTE - MG, BELO HORIZONTE - MG",
+   "dadosTecnicos": {
+    "Gerador": {
+     "rg_abrangencia": "Total",
+     "rg_fabricante": "Cummins",
+     "rg_marca_motor": "Cummins",
+     "rg_fab_alternador": "Stamford",
+     "rg_usca_controlador": "Outro",
+     "rg_potencia_kva": "313",
+     "rg_tensao_v": "380",
+     "rg_qtd_baterias": "2 Baterias",
+     "rg_tensao_flutuacao_bat": "27.4"
+    }
+   }
+  },
+  {
+   "cod": "D127",
+   "nome": "SILVIANO BRANDAO",
+   "endereco": "AV. SILVIANO BRANDÃO, 1650, HORTO, BELO HORIZONTE - MG, BELO HORIZONTE - MG",
+   "dadosTecnicos": {
+    "Gerador": {
+     "rg_abrangencia": "Total",
+     "rg_fabricante": "Cummins",
+     "rg_marca_motor": "Cummins",
+     "rg_fab_alternador": "Stamford",
+     "rg_potencia_kva": "313",
+     "rg_tensao_v": "380",
+     "rg_qtd_baterias": "2 Baterias",
+     "rg_tensao_flutuacao_bat": "27.6"
+    }
+   }
+  },
+  {
+   "cod": "D131",
+   "nome": "SERRA",
+   "endereco": "RUA DO OURO, 949, SERRA, BELO HORIZONTE - MG, BELO HORIZONTE - MG",
+   "dadosTecnicos": {
+    "Gerador": {
+     "rg_abrangencia": "Total",
+     "rg_fabricante": "Cummins",
+     "rg_marca_motor": "Cummins",
+     "rg_fab_alternador": "Stamford",
+     "rg_usca_controlador": "Outro",
+     "rg_potencia_kva": "313",
+     "rg_tensao_v": "380",
+     "rg_qtd_baterias": "2 Baterias",
+     "rg_tensao_flutuacao_bat": "27.5"
+    }
+   }
+  },
+  {
+   "cod": "D133",
+   "nome": "BOA VISTA",
+   "endereco": "RUA ELISIO DE BRITO, 239, BOA VISTA, BELO HORIZONTE - MG, BELO HORIZONTE - MG",
+   "dadosTecnicos": {
+    "Gerador": {
+     "rg_abrangencia": "Total",
+     "rg_fabricante": "Cummins",
+     "rg_marca_motor": "Cummins",
+     "rg_fab_alternador": "Stamford",
+     "rg_potencia_kva": "313",
+     "rg_tensao_v": "380",
+     "rg_qtd_baterias": "2 Baterias",
+     "rg_tensao_flutuacao_bat": "27.4"
+    }
+   }
+  },
+  {
+   "cod": "D155",
+   "nome": "MATOZINHOS",
+   "endereco": "ROD. MG424,951, DISTRITO INDUSTRIAL, MATOZINHOS - MG, MATOZINHOS - MG",
+   "dadosTecnicos": {
+    "Gerador": {
+     "rg_abrangencia": "Total",
+     "rg_tensao_v": "380",
+     "rg_qtd_baterias": "2 Baterias"
+    }
+   }
+  },
+  {
+   "cod": "D157",
+   "nome": "BARREIRO",
+   "endereco": "AV. MENELICK DE CARVALHO, 245, ARAGUAIA (BARREIRO), BELO HORIZONTE - MG, BELO HORIZONTE - MG",
+   "dadosTecnicos": {
+    "Gerador": {
+     "rg_abrangencia": "Total",
+     "rg_fabricante": "Cummins",
+     "rg_marca_motor": "Cummins",
+     "rg_fab_alternador": "Stamford",
+     "rg_usca_controlador": "Outro",
+     "rg_potencia_kva": "313",
+     "rg_tensao_v": "380",
+     "rg_qtd_baterias": "2 Baterias",
+     "rg_tensao_flutuacao_bat": "26.6"
+    }
+   }
+  },
+  {
+   "cod": "D164",
+   "nome": "RIACHO DAS PEDRAS",
+   "endereco": "ROD. BR381 KM 35,3700, RIACHO DAS PEDRAS, CONTAGEM - MG, CONTAGEM - MG",
+   "dadosTecnicos": {
+    "Gerador": {
+     "rg_abrangencia": "Parcial",
+     "rg_fabricante": "Stemac",
+     "rg_marca_motor": "Cummins",
+     "rg_fab_alternador": "WEG",
+     "rg_usca_controlador": "KVA",
+     "rg_potencia_kva": "400",
+     "rg_tensao_v": "380",
+     "rg_qtd_baterias": "2 Baterias",
+     "rg_tensao_flutuacao_bat": "27.0"
+    }
+   }
+  },
+  {
+   "cod": "D169",
+   "nome": "PAULO VI",
+   "endereco": "RUA JOÃO LEMOS, 151, PAULO VI, BELO HORIZONTE - MG, BELO HORIZONTE - MG",
+   "dadosTecnicos": {
+    "Gerador": {
+     "rg_abrangencia": "Total",
+     "rg_fabricante": "Rodo Agro",
+     "rg_marca_motor": "Scania",
+     "rg_fab_alternador": "WEG",
+     "rg_usca_controlador": "Deep Sea",
+     "rg_potencia_kva": "315",
+     "rg_tensao_v": "380",
+     "rg_qtd_baterias": "2 Baterias",
+     "rg_tensao_flutuacao_bat": "27.2"
+    }
+   }
+  },
+  {
+   "cod": "D227",
+   "nome": "LAGOA SANTA",
+   "endereco": "RUA CORONEL DURAES, 2400, BELA VISTA, LAGOA SANTA - MG, LAGOA SANTA - MG",
+   "dadosTecnicos": {
+    "Gerador": {
+     "rg_abrangencia": "Total",
+     "rg_marca_motor": "Scania",
+     "rg_fab_alternador": "WEG",
+     "rg_usca_controlador": "KVA",
+     "rg_potencia_kva": "310",
+     "rg_tensao_v": "220",
+     "rg_qtd_baterias": "2 Baterias",
+     "rg_tensao_flutuacao_bat": "27.5"
+    }
+   }
+  },
+  {
+   "cod": "D238",
+   "nome": "CEARA",
+   "endereco": "RUA CEARÁ, 1700, SAVASSI, BELO HORIZONTE - MG, BELO HORIZONTE - MG",
+   "dadosTecnicos": {
+    "Gerador": {
+     "rg_abrangencia": "Total",
+     "rg_fabricante": "Stemac",
+     "rg_marca_motor": "Outro",
+     "rg_fab_alternador": "WEG",
+     "rg_usca_controlador": "KVA",
+     "rg_potencia_kva": "450",
+     "rg_tensao_v": "220",
+     "rg_qtd_baterias": "2 Baterias",
+     "rg_tensao_flutuacao_bat": "26.6"
+    }
+   }
+  }
+ ],
+ "dadosTecnicosPorBloco": {
+  "Gerador": [
+   {
+    "id": "rg_abrangencia",
+    "n": "1",
+    "secao": "Dados técnicos",
+    "pergunta": "Esse gerador é parcial ou total?",
+    "tipo": "opcoes",
+    "opcoes": [
+     "Total",
+     "Parcial"
+    ],
+    "foto": null,
+    "obs": false,
+    "prioridade": null,
+    "cond": null
+   },
+   {
+    "id": "rg_fabricante",
+    "n": "2",
+    "secao": "Dados técnicos",
+    "pergunta": "Fabricante do Gerador",
+    "tipo": "opcoes",
+    "opcoes": [
+     "Stemac",
+     "Cummins",
+     "MWM",
+     "Atlas Copco",
+     "Maxitrust",
+     "Rodo Agro",
+     "Outro"
+    ],
+    "foto": {
+     "sempre": true
+    },
+    "obs": false,
+    "prioridade": null,
+    "cond": null
+   },
+   {
+    "id": "rg_marca_motor",
+    "n": "3",
+    "secao": "Dados técnicos",
+    "pergunta": "Marca / Motor",
+    "tipo": "opcoes",
+    "opcoes": [
+     "Cummins",
+     "MWM",
+     "Perkins",
+     "Scania",
+     "Volvo Penta",
+     "Outro"
+    ],
+    "foto": {
+     "sempre": true
+    },
+    "obs": false,
+    "prioridade": null,
+    "cond": null
+   },
+   {
+    "id": "rg_fab_alternador",
+    "n": "4",
+    "secao": "Dados técnicos",
+    "pergunta": "Fabricante do alternador",
+    "tipo": "opcoes",
+    "opcoes": [
+     "WEG",
+     "Stamford",
+     "Mecc Alte",
+     "Outro"
+    ],
+    "foto": {
+     "sempre": true
+    },
+    "obs": false,
+    "prioridade": null,
+    "cond": null
+   },
+   {
+    "id": "rg_usca_controlador",
+    "n": "5",
+    "secao": "Dados técnicos",
+    "pergunta": "USCA / Controlador",
+    "tipo": "opcoes",
+    "opcoes": [
+     "Deep Sea",
+     "DEIF",
+     "Stemac",
+     "KVA",
+     "Outro"
+    ],
+    "foto": {
+     "sempre": true
+    },
+    "obs": false,
+    "prioridade": null,
+    "cond": null
+   },
+   {
+    "id": "rg_potencia_kva",
+    "n": "6",
+    "secao": "Dados técnicos",
+    "pergunta": "Potência (kVA)",
+    "tipo": "numero",
+    "opcoes": [],
+    "foto": {
+     "sempre": true
+    },
+    "obs": false,
+    "prioridade": null,
+    "cond": null
+   },
+   {
+    "id": "rg_tensao_v",
+    "n": "7",
+    "secao": "Dados técnicos",
+    "pergunta": "Tensão (V)",
+    "tipo": "opcoes",
+    "opcoes": [
+     "220",
+     "380"
+    ],
+    "foto": {
+     "sempre": true
+    },
+    "obs": false,
+    "prioridade": null,
+    "cond": null
+   },
+   {
+    "id": "rg_qtd_baterias",
+    "n": "8",
+    "secao": "Dados técnicos",
+    "pergunta": "Quantidade de Baterias",
+    "tipo": "opcoes",
+    "opcoes": [
+     "1 Bateria",
+     "2 Baterias"
+    ],
+    "foto": null,
+    "obs": false,
+    "prioridade": null,
+    "cond": null
+   },
+   {
+    "id": "rg_tensao_flutuacao_bat",
+    "n": "9",
+    "secao": "Dados técnicos",
+    "pergunta": "Qual a tensão de flutuação da bateria (V)?",
+    "tipo": "numero",
+    "opcoes": [],
+    "foto": {
+     "sempre": true
+    },
+    "obs": false,
+    "prioridade": null,
+    "cond": null
+   }
+  ]
+ }
 }

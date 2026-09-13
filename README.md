@@ -30,7 +30,20 @@ daí funciona offline.
 
 - Cada visita é um **relatório independente**, com número próprio — a mesma loja pode
   receber quantas visitas forem necessárias, sem agrupar.
-- A **geolocalização** é capturada na abertura da visita e reconferida ao finalizar.
+- **Técnico** e **loja** são escolhidos em listas suspensas (não é mais texto livre). Se a
+  loja não estiver na lista, o botão **+ Nova loja** cadastra o código, nome e endereço na
+  hora — fica salva neste aparelho e disponível nas próximas visitas.
+- A **geolocalização é obrigatória e automática**: o app já sai buscando o GPS ao abrir a
+  tela de nova visita, sem precisar tocar em nada, e só libera a escolha do checklist depois
+  que a localização é obtida. Se falhar (permissão negada, sem sinal), mostra o motivo e um
+  botão **Tentar novamente** — não dá para seguir sem ela.
+- Os **dados técnicos do gerador** (fabricante, motor, alternador, USCA, potência, tensão,
+  baterias) são perguntados **uma única vez por loja**, na primeira visita em que a loja
+  ainda não tiver esse cadastro completo. Nas visitas seguintes esses dados aparecem prontos
+  (não são perguntados de novo); se algo mudou no equipamento, o link **"Dados técnicos
+  incorretos? Corrigir cadastro da loja"**, dentro do checklist, libera os campos para
+  atualizar. Cada relatório continua trazendo os valores no seu próprio registro, mesmo
+  quando eles vêm do cadastro da loja.
 - As respostas e fotos ficam **no próprio celular** (IndexedDB). Nada se perde se o app
   fechar ou o celular ficar sem sinal.
 - As fotos são reduzidas para no máximo 1600px e salvas em JPEG, para não encher a memória.
@@ -54,15 +67,23 @@ Cada item aceita:
 | `cond` | `{"id": "outro_item", "igual": "Sim"}` — só aparece se aquele item tiver essa resposta |
 | `prioridade` | `Crítica`, `Alta` ou `Média` (aparece como etiqueta) |
 
-As listas `tecnicos` e `lojas` estão **vazias de propósito**: este repositório é público e
-nomes de técnicos e endereços de loja são dados internos da DMA. O técnico digita o próprio
-nome (que o celular passa a sugerir nas próximas visitas) e a loja na hora.
+As listas `tecnicos` e `lojas` (com código, nome, endereço e os dados técnicos já
+conhecidos de cada gerador) ficam neste arquivo — **por decisão da DMA, ele é público**, ou
+seja, qualquer pessoa com o link do app consegue ver esses dados. Se isso mudar no futuro,
+mova `tecnicos`/`lojas`/`dadosTecnicosPorBloco` para fora do repositório público.
 
-Se um dia o repositório virar privado, é só preencher essas duas listas —
-`checklists.interno.json`, guardado fora do GitHub, tem a versão completa.
+A seção `dadosTecnicosPorBloco` define, por bloco de equipamento (hoje só `"Gerador"`), quais
+perguntas são "dado da loja" — pedidas uma vez só e reaproveitadas nas visitas seguintes —
+em vez de aparecerem na lista `itens` de cada checklist.
+
+Lojas cadastradas em campo pelo botão **+ Nova loja**, e correções feitas pelo link
+"Corrigir cadastro da loja", ficam salvas **apenas no aparelho** de quem cadastrou
+(localStorage) — elas não voltam sozinhas para este `checklists.json`. Para que todos os
+técnicos passem a ver uma loja nova ou uma correção, adicione/edite manualmente aqui e
+publique de novo.
 
 **Depois de editar qualquer arquivo, abra `sw.js` e troque o número em
-`const CACHE = 'equipe-gerador-v1'`** (v2, v3…). Sem isso os celulares que já instalaram o
+`const CACHE = 'equipe-gerador-v2'`** (v3, v4…). Sem isso os celulares que já instalaram o
 app continuam abrindo a versão antiga guardada em cache.
 
 ## Regra de conformidade

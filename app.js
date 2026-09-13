@@ -89,6 +89,7 @@ const visivel = (item, respostas) => {
 
 /* precisa de foto? */
 function exigeFoto(item, resp){
+  if (item._bloqueado) return false; // dado técnico já cadastrado da loja: não pede foto de novo
   if (!item.foto) return false;
   if (item.foto.sempre) return true;
   if (item.foto.quando) return resp != null &&
@@ -96,10 +97,78 @@ function exigeFoto(item, resp){
   return false;
 }
 
+/* ===================== dados técnicos por loja (cadastro único) =====================
+   Os campos da seção "Dados técnicos" (fabricante, potência, tensão etc.) são
+   características do equipamento da loja, não da visita. São perguntados normalmente
+   na primeira vez (loja nova ou com cadastro incompleto); depois disso ficam
+   registrados na loja e o app só mostra o valor, sem perguntar de novo. */
+function camposTecnicosDoBloco(bloco){
+  return (CFG.dadosTecnicosPorBloco && CFG.dadosTecnicosPorBloco[bloco]) || [];
+}
+function encontrarLoja(cod){
+  return (CFG.lojas || []).find(l => l.cod.toUpperCase() === String(cod || '').trim().toUpperCase());
+}
+function dadosTecnicosCompletos(loja, bloco){
+  const campos = camposTecnicosDoBloco(bloco);
+  if (!campos.length) return true;
+  const dt = loja && loja.dadosTecnicos && loja.dadosTecnicos[bloco];
+  if (!dt) return false;
+  return campos.every(c => dt[c.id] != null && String(dt[c.id]).trim() !== '');
+}
+/* itens efetivos do checklist: dados técnicos do bloco (bloqueados ou não) + itens normais */
+function itensDoChecklist(chk, v){
+  const campos = camposTecnicosDoBloco(chk.bloco);
+  if (!campos.length) return chk.itens;
+  const bloqueado = !!(v && v._dtBloqueado);
+  const prefixo = campos.map(c => Object.assign({}, c, {_bloqueado: bloqueado}));
+  return [...prefixo, ...chk.itens];
+}
+
+/* extras salvas neste aparelho: lojas novas cadastradas em campo e correções de dados técnicos */
+function aplicarExtrasLocais(){
+  try {
+    const extras = JSON.parse(localStorage.getItem('lojasExtras') || '[]');
+    for (const nova of extras) if (!encontrarLoja(nova.cod)) CFG.lojas.push(nova);
+  } catch (e) {}
+  try {
+    const overrides = JSON.parse(localStorage.getItem('dadosTecnicosExtras') || '{}');
+    for (const chave in overrides){
+      const [cod, bloco] = chave.split('|');
+      const l = encontrarLoja(cod);
+      if (!l) continue;
+      l.dadosTecnicos = l.dadosTecnicos || {};
+      l.dadosTecnicos[bloco] = Object.assign({}, l.dadosTecnicos[bloco] || {}, overrides[chave]);
+    }
+  } catch (e) {}
+}
+function salvarLojaNova(loja){
+  CFG.lojas.push(loja);
+  const lista = JSON.parse(localStorage.getItem('lojasExtras') || '[]');
+  lista.push(loja);
+  localStorage.setItem('lojasExtras', JSON.stringify(lista));
+}
+/* quando todos os campos técnicos do bloco foram respondidos nesta visita, grava no
+   cadastro da loja (neste aparelho) para não perguntar de novo nas próximas visitas */
+function salvarDadosTecnicosSeCompleto(chk, v){
+  const campos = camposTecnicosDoBloco(chk.bloco);
+  if (!campos.length || v._dtBloqueado) return;
+  if (!campos.every(c => v.respostas[c.id] != null && String(v.respostas[c.id]).trim() !== '')) return;
+  const l = encontrarLoja(v.loja.cod);
+  if (!l) return;
+  const valores = {};
+  campos.forEach(c => { valores[c.id] = v.respostas[c.id]; });
+  l.dadosTecnicos = l.dadosTecnicos || {};
+  l.dadosTecnicos[chk.bloco] = Object.assign({}, l.dadosTecnicos[chk.bloco] || {}, valores);
+  const chave = `${v.loja.cod}|${chk.bloco}`;
+  const overrides = JSON.parse(localStorage.getItem('dadosTecnicosExtras') || '{}');
+  overrides[chave] = l.dadosTecnicos[chk.bloco];
+  localStorage.setItem('dadosTecnicosExtras', JSON.stringify(overrides));
+}
+
 /* item pendente = visível, sem resposta, ou com foto exigida faltando */
 function pendencias(chk, v){
   const faltando = [];
-  for (const it of chk.itens){
+  for (const it of itensDoChecklist(chk, v)){
     if (!visivel(it, v.respostas)) continue;
     const r = v.respostas[it.id];
     const semResposta = (it.tipo === 'foto') ? false : (r == null || r === '');
@@ -217,91 +286,160 @@ function contarNC(chk, v){
 /* ===================== tela: nova visita ===================== */
 async function telaNovaVisita(){
   liberarUrls();
-  const salvos = JSON.parse(localStorage.getItem('tecnicosSalvos') || '[]');
-  const lista = [...new Set([...(CFG.tecnicos || []), ...salvos])];
-  const ultimo = localStorage.getItem('ultimoTecnico') || '';
+  const ultimoTec = localStorage.getItem('ultimoTecnico') || '';
+  const lojasOrdenadas = [...(CFG.lojas || [])].sort((a,b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+
   montarTela({
     titulo: 'Nova visita', voltar: telaInicio,
     html: `
     <div class="cartao">
       <label class="campo"><span>Técnico responsável</span>
-        <input type="text" id="fTec" list="tecnicos" placeholder="Seu nome completo"
-               autocomplete="name" enterkeyhint="next" value="${esc(ultimo)}">
-        <datalist id="tecnicos">${lista.map(t =>
-          `<option value="${esc(t)}"></option>`).join('')}</datalist></label>
+        <select id="fTec">
+          <option value="">Selecione…</option>
+          ${(CFG.tecnicos || []).map(t =>
+            `<option value="${esc(t)}" ${t === ultimoTec ? 'selected' : ''}>${esc(t)}</option>`).join('')}
+        </select>
+      </label>
 
       <label class="campo"><span>Loja</span>
-        <input type="search" id="fLoja" list="lojas" placeholder="Código ou nome — ex.: D005"
-               autocomplete="off" enterkeyhint="done">
-        <datalist id="lojas">${(CFG.lojas || []).map(l =>
-          `<option value="${esc(l.cod)} — ${esc(l.nome)}"></option>`).join('')}</datalist>
+        <select id="fLoja">
+          <option value="">Selecione…</option>
+          ${lojasOrdenadas.map(l =>
+            `<option value="${esc(l.cod)}">${esc(l.cod)} — ${esc(l.nome)}</option>`).join('')}
+        </select>
       </label>
-      <div id="lojaInfo" class="s" style="font-size:12.5px;color:var(--cinza);margin:-8px 0 14px"></div>
+      <div id="lojaInfo" class="s" style="font-size:12.5px;color:var(--cinza);margin:-8px 0 10px"></div>
+      <button type="button" class="btn sec pq" id="bNovaLoja">+ Nova loja</button>
 
-      <label class="campo"><span>Endereço (opcional)</span>
-        <input type="text" id="fEnd" placeholder="Preenchido automaticamente se a loja for conhecida"></label>
+      <div id="painelNovaLoja" class="oculto" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--linha)">
+        <label class="campo"><span>Código da loja</span>
+          <input type="text" id="nlCod" placeholder="Ex.: D200" autocapitalize="characters"></label>
+        <label class="campo"><span>Nome da loja</span>
+          <input type="text" id="nlNome" placeholder="Ex.: NOVA LIMA"></label>
+        <label class="campo"><span>Endereço</span>
+          <input type="text" id="nlEnd" placeholder="Endereço completo"></label>
+        <div id="erroNovaLoja"></div>
+        <div style="display:flex;gap:10px">
+          <button type="button" class="btn sec" id="bCancelarLoja" style="flex:1">Cancelar</button>
+          <button type="button" class="btn" id="bSalvarLoja" style="flex:1">Salvar loja</button>
+        </div>
+      </div>
 
-      <label class="campo"><span>Matrícula do gerente que acompanhou</span>
+      <label class="campo" style="margin-top:14px"><span>Matrícula do gerente que acompanhou</span>
         <input type="number" id="fMat" inputmode="numeric" placeholder="Ex.: 653335"></label>
     </div>
 
     <div class="cartao">
-      <div style="font-size:13px;font-weight:600;color:#374151;margin-bottom:6px">Localização da visita</div>
+      <div style="font-size:13px;font-weight:600;color:#374151;margin-bottom:6px">Localização da visita (obrigatória)</div>
       <div id="geo" style="font-size:13px;color:var(--cinza)">Obtendo GPS…</div>
-      <button class="btn sec pq" id="bGeo" style="margin-top:9px">Atualizar localização</button>
+      <button class="btn sec pq oculto" id="bGeo" style="margin-top:9px">Tentar novamente</button>
     </div>
 
     <h2>Qual checklist?</h2>
+    <div id="listaChecklists">
     ${CFG.checklists.map(c => `
-      <div class="linha-lista" data-chk="${c.id}">
+      <div class="linha-lista desabilitada" data-chk="${c.id}">
         <div class="cresce"><div class="t">${esc(c.titulo)}</div>
         <div class="s">${c.itens.length} itens · ${c.itens.filter(i=>i.foto).length} com foto</div></div>
         <span style="color:var(--cinza);font-size:20px">›</span>
       </div>`).join('')}
+    </div>
     <div id="erroNova"></div>`
   });
 
   const $tec = document.getElementById('fTec');
-  let geo = null;
-  const $geo = document.getElementById('geo');
+  const $loja = document.getElementById('fLoja'), $info = document.getElementById('lojaInfo');
+  const $lista = document.getElementById('listaChecklists');
+  let geo = null, geoOk = false;
+
+  const bloquearChecklists = () => {
+    $lista.querySelectorAll('[data-chk]').forEach(el => el.classList.toggle('desabilitada', !geoOk));
+  };
+
+  const $geo = document.getElementById('geo'), $bGeo = document.getElementById('bGeo');
   const buscarGeo = async () => {
-    $geo.textContent = 'Obtendo GPS…';
+    $bGeo.classList.add('oculto');
+    $geo.textContent = 'Obtendo GPS…'; $geo.style.color = 'var(--cinza)';
     geo = await pegarLocal();
-    $geo.textContent = localTexto(geo);
-    $geo.style.color = geo.erro ? 'var(--ambar)' : 'var(--verde)';
+    geoOk = !geo.erro;
+    $geo.textContent = geoOk ? localTexto(geo)
+      : `${geo.erro} — a localização é obrigatória para iniciar a visita.`;
+    $geo.style.color = geoOk ? 'var(--verde)' : 'var(--vermelho)';
+    $bGeo.classList.toggle('oculto', geoOk);
+    bloquearChecklists();
   };
   buscarGeo();
-  document.getElementById('bGeo').onclick = buscarGeo;
+  $bGeo.onclick = buscarGeo;
 
-  const $loja = document.getElementById('fLoja'), $end = document.getElementById('fEnd');
-  const $info = document.getElementById('lojaInfo');
-  $loja.oninput = () => {
-    const cod = $loja.value.split('—')[0].trim().toUpperCase();
-    const l = (CFG.lojas || []).find(x => x.cod.toUpperCase() === cod);
-    if (l){ $end.value = l.endereco || ''; $info.textContent = 'Loja conhecida dos relatórios anteriores.'; }
-    else { $info.textContent = $loja.value ? 'Preencha o endereço se quiser que ele saia no relatório.' : ''; }
+  const preencherInfoLoja = () => {
+    const l = encontrarLoja($loja.value);
+    $info.textContent = l ? (l.endereco || 'Endereço não cadastrado.') : '';
+  };
+  $loja.onchange = preencherInfoLoja;
+
+  const $painel = document.getElementById('painelNovaLoja');
+  const limparPainelLoja = () => {
+    $painel.classList.add('oculto');
+    document.getElementById('nlCod').value = '';
+    document.getElementById('nlNome').value = '';
+    document.getElementById('nlEnd').value = '';
+    document.getElementById('erroNovaLoja').innerHTML = '';
+  };
+  document.getElementById('bNovaLoja').onclick = () => $painel.classList.toggle('oculto');
+  document.getElementById('bCancelarLoja').onclick = limparPainelLoja;
+  document.getElementById('bSalvarLoja').onclick = () => {
+    const cod = document.getElementById('nlCod').value.trim().toUpperCase();
+    const nome = document.getElementById('nlNome').value.trim().toUpperCase();
+    const end = document.getElementById('nlEnd').value.trim();
+    const $erro = document.getElementById('erroNovaLoja');
+    if (!cod || !nome){
+      $erro.innerHTML = `<div class="aviso erro">Informe ao menos o código e o nome da loja.</div>`;
+      return;
+    }
+    if (encontrarLoja(cod)){
+      $erro.innerHTML = `<div class="aviso erro">Já existe uma loja cadastrada com o código ${esc(cod)}.</div>`;
+      return;
+    }
+    salvarLojaNova({cod, nome, endereco: end, dadosTecnicos: {}});
+    const opt = document.createElement('option');
+    opt.value = cod; opt.textContent = `${cod} — ${nome}`;
+    $loja.appendChild(opt);
+    $loja.value = cod;
+    preencherInfoLoja();
+    limparPainelLoja();
   };
 
-  $tela.querySelectorAll('[data-chk]').forEach(el => {
+  $lista.querySelectorAll('[data-chk]').forEach(el => {
     el.onclick = async () => {
-      const tec = $tec.value.trim(), txtLoja = $loja.value.trim();
       const $err = document.getElementById('erroNova');
-      if (!tec || !txtLoja){
-        $err.innerHTML = `<div class="aviso erro">Informe o técnico e a loja antes de escolher o checklist.</div>`;
+      if (!geoOk){
+        $err.innerHTML = `<div class="aviso erro">Aguarde a localização ser obtida — ela é obrigatória para iniciar a visita.</div>`;
+        $err.scrollIntoView({behavior:'smooth', block:'center'});
+        return;
+      }
+      const tec = $tec.value, codLoja = $loja.value;
+      if (!tec || !codLoja){
+        $err.innerHTML = `<div class="aviso erro">Selecione o técnico e a loja antes de escolher o checklist.</div>`;
         $err.scrollIntoView({behavior:'smooth', block:'center'});
         return;
       }
       localStorage.setItem('ultimoTecnico', tec);
-      const guard = JSON.parse(localStorage.getItem('tecnicosSalvos') || '[]');
-      if (!guard.includes(tec)) localStorage.setItem('tecnicosSalvos', JSON.stringify([...guard, tec]));
-      const partes = txtLoja.split('—');
+      const loja = encontrarLoja(codLoja);
+      const chk = CFG.checklists.find(c => c.id === el.dataset.chk);
+      const bloqueado = dadosTecnicosCompletos(loja, chk.bloco);
+      const respostas = {};
+      const campos = camposTecnicosDoBloco(chk.bloco);
+      if (campos.length){
+        const dt = (loja.dadosTecnicos && loja.dadosTecnicos[chk.bloco]) || {};
+        campos.forEach(c => { if (dt[c.id] != null && dt[c.id] !== '') respostas[c.id] = dt[c.id]; });
+      }
       visita = {
         id: uid(), criadoEm: new Date().toISOString(), finalizada: false,
         tecnico: tec,
-        loja: {cod: partes[0].trim().toUpperCase(), nome: (partes[1]||'').trim(),
-               endereco: $end.value.trim()},
+        loja: {cod: loja.cod, nome: loja.nome, endereco: loja.endereco || ''},
         matricula: document.getElementById('fMat').value.trim(),
-        geo, checklist: el.dataset.chk, respostas: {}, obs: {}, fotos: {}
+        geo, checklist: el.dataset.chk, respostas, obs: {}, fotos: {},
+        _dtBloqueado: bloqueado
       };
       await BD.salvarVisita(visita);
       telaChecklist();
@@ -316,12 +454,17 @@ const RUINS = ['não','nao'];
 function telaChecklist(){
   liberarUrls();
   const chk = CFG.checklists.find(c => c.id === visita.checklist);
+  const itens = itensDoChecklist(chk, visita);
+  const campos = camposTecnicosDoBloco(chk.bloco);
   let html = '';
   let secaoAtual = null;
-  for (const it of chk.itens){
+  itens.forEach((it, idx) => {
     if (it.secao !== secaoAtual){ secaoAtual = it.secao; html += `<h2>${esc(secaoAtual)}</h2>`; }
     html += htmlItem(it);
-  }
+    if (campos.length && idx === campos.length - 1 && visita._dtBloqueado){
+      html += `<button type="button" class="link-acao" id="bCorrigirDT">Dados técnicos incorretos? Corrigir cadastro da loja</button>`;
+    }
+  });
   montarTela({
     titulo: chk.titulo,
     sub: `${visita.loja.cod} — ${visita.loja.nome || 's/ nome'} · ${visita.tecnico.split(' ')[0]}`,
@@ -330,14 +473,22 @@ function telaChecklist(){
     barra: `<button class="btn sec" id="bSalvar" style="flex:1">Salvar e sair</button>
             <button class="btn" id="bRevisar" style="flex:1.4">Revisar</button>`
   });
-  ligarItens(chk);
+  ligarItens(chk, itens);
   atualizarProgresso(chk);
   document.getElementById('bSalvar').onclick = async () => { await BD.salvarVisita(visita); telaInicio(); };
   document.getElementById('bRevisar').onclick = async () => { await BD.salvarVisita(visita); telaRevisao(); };
+  const bCorr = document.getElementById('bCorrigirDT');
+  if (bCorr) bCorr.onclick = async () => { visita._dtBloqueado = false; await BD.salvarVisita(visita); telaChecklist(); };
 }
 
 function htmlItem(it){
   const r = visita.respostas[it.id];
+  if (it._bloqueado){
+    return `<div class="item bloqueado respondido" data-item="${esc(it.id)}">
+      <div class="enunciado">${esc(it.pergunta)}</div>
+      <div class="valor-fixo">${esc(r == null || r === '' ? '—' : r)} <span class="tag cadastrado">dado da loja</span></div>
+    </div>`;
+  }
   const prio = it.prioridade ? `<span class="tag ${CLASSE_PRIO[it.prioridade]||'media'}">${esc(it.prioridade)}</span>` : '';
   const tagFoto = it.foto ? `<span class="tag foto">foto${it.foto.quando ? ` se ${esc(it.foto.quando)}` : ''}</span>` : '';
   let entrada = '';
@@ -366,28 +517,27 @@ function htmlItem(it){
   </div>`;
 }
 
-function ligarItens(chk){
-  const porId = Object.fromEntries(chk.itens.map(i => [i.id, i]));
-
+function ligarItens(chk, itens){
   $tela.querySelectorAll('[data-op]').forEach(b => {
     b.onclick = async () => {
       const id = b.dataset.op, val = b.dataset.val;
       visita.respostas[id] = (visita.respostas[id] === val) ? '' : val;
       $tela.querySelectorAll(`[data-op="${CSS.escape(id)}"]`).forEach(x =>
         x.setAttribute('aria-pressed', String(visita.respostas[id] === x.dataset.val)));
+      salvarDadosTecnicosSeCompleto(chk, visita);
       await BD.salvarVisita(visita);
-      redesenhar(chk, porId);
+      redesenhar(chk, itens);
     };
   });
   $tela.querySelectorAll('[data-in]').forEach(el => {
     el.oninput = () => { visita.respostas[el.dataset.in] = el.value; };
-    el.onblur  = async () => { await BD.salvarVisita(visita); redesenhar(chk, porId); };
+    el.onblur  = async () => { salvarDadosTecnicosSeCompleto(chk, visita); await BD.salvarVisita(visita); redesenhar(chk, itens); };
   });
   $tela.querySelectorAll('[data-obs]').forEach(el => {
     el.oninput = () => { visita.obs[el.dataset.obs] = el.value; };
     el.onblur  = () => BD.salvarVisita(visita);
   });
-  redesenhar(chk, porId);
+  redesenhar(chk, itens);
 }
 
 async function desenharFotos(it){
@@ -445,19 +595,20 @@ function pintarItem(it){
   el.classList.toggle('pendente-obrig', respondido && faltaFoto);
 }
 
-function redesenhar(chk, porId){
-  for (const it of chk.itens){
+function redesenhar(chk, itens){
+  for (const it of itens){
     const el = $tela.querySelector(`[data-item="${CSS.escape(it.id)}"]`);
     if (!el) continue;
     const mostra = visivel(it, visita.respostas);
     el.classList.toggle('oculto', !mostra);
+    if (it._bloqueado) continue;
     if (mostra){ desenharFotos(it); pintarItem(it); }
   }
   atualizarProgresso(chk);
 }
 
 function atualizarProgresso(chk){
-  const visiveis = chk.itens.filter(it => visivel(it, visita.respostas));
+  const visiveis = itensDoChecklist(chk, visita).filter(it => visivel(it, visita.respostas));
   const falta = pendencias(chk, visita).length;
   const feito = visiveis.length - falta;
   const pct = visiveis.length ? Math.round(100 * feito / visiveis.length) : 0;
@@ -471,7 +622,7 @@ function telaRevisao(){
   liberarUrls();
   const chk = CFG.checklists.find(c => c.id === visita.checklist);
   const falta = pendencias(chk, visita);
-  const visiveis = chk.itens.filter(it => visivel(it, visita.respostas));
+  const visiveis = itensDoChecklist(chk, visita).filter(it => visivel(it, visita.respostas));
   const ncs = visiveis.filter(it => situacao(it, visita.respostas[it.id]) === 'Não conforme');
   const nas = visiveis.filter(it => situacao(it, visita.respostas[it.id]) === 'Não se aplica');
   const nFotos = Object.values(visita.fotos).reduce((a,b) => a + b.length, 0);
@@ -544,7 +695,7 @@ function telaRevisao(){
 async function telaRelatorio(){
   liberarUrls();
   const chk = CFG.checklists.find(c => c.id === visita.checklist);
-  const visiveis = chk.itens.filter(it => visivel(it, visita.respostas));
+  const visiveis = itensDoChecklist(chk, visita).filter(it => visivel(it, visita.respostas));
   const cont = {Conforme:0, 'Não conforme':0, 'Não se aplica':0, Informativo:0, Pendente:0};
   for (const it of visiveis) cont[situacao(it, visita.respostas[it.id])]++;
   const avaliados = visiveis.length;
@@ -659,6 +810,7 @@ addEventListener('offline', estadoRede);
       Conecte-se à internet uma vez para o app baixar a lista de perguntas.</div>`;
     return;
   }
+  aplicarExtrasLocais();
   telaInicio();
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
 })();
