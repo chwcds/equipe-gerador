@@ -405,6 +405,7 @@ async function telaNovaVisita(){
     localStorage.setItem('ultimaRede', $rede.value);
     atualizarLojasComFiltro();
   };
+  atualizarLojasComFiltro(); // já abre filtrada pela última rede usada
 
   const bloquearChecklists = () => {
     $lista.querySelectorAll('[data-chk]').forEach(el => el.classList.toggle('desabilitada', !geoOk));
@@ -454,7 +455,11 @@ async function telaNovaVisita(){
       $erro.innerHTML = `<div class="aviso erro">Já existe uma loja cadastrada com o código ${esc(cod)}.</div>`;
       return;
     }
-    salvarLojaNova({cod, nome, endereco: end, dadosTecnicos: {}});
+    if (!$rede.value){
+      $erro.innerHTML = `<div class="aviso erro">Escolha primeiro a rede que está atendendo.</div>`;
+      return;
+    }
+    salvarLojaNova({cod, nome, endereco: end, rede: $rede.value, dadosTecnicos: {}});
     const opt = document.createElement('option');
     opt.value = cod; opt.textContent = `${cod} — ${nome}`;
     $loja.appendChild(opt);
