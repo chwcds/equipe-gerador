@@ -305,6 +305,8 @@ function contarNC(chk, v){
 async function telaNovaVisita(){
   liberarUrls();
   const ultimoTec = localStorage.getItem('ultimoTecnico') || '';
+  const ultimaRede = localStorage.getItem('ultimaRede') || 'Supermercados BH';
+  const redes = ['Supermercados BH', 'DMA'];
   const lojasOrdenadas = [...(CFG.lojas || [])].sort((a,b) => a.nome.localeCompare(b.nome, 'pt-BR'));
 
   montarTela({
@@ -316,6 +318,14 @@ async function telaNovaVisita(){
           <option value="">Selecione…</option>
           ${(CFG.tecnicos || []).map(t =>
             `<option value="${esc(t)}" ${t === ultimoTec ? 'selected' : ''}>${esc(t)}</option>`).join('')}
+        </select>
+      </label>
+
+      <label class="campo"><span>Rede que está atendendo</span>
+        <select id="fRede">
+          <option value="">Selecione…</option>
+          ${redes.map(r =>
+            `<option value="${esc(r)}" ${r === ultimaRede ? 'selected' : ''}>${esc(r)}</option>`).join('')}
         </select>
       </label>
 
@@ -366,9 +376,35 @@ async function telaNovaVisita(){
   });
 
   const $tec = document.getElementById('fTec');
+  const $rede = document.getElementById('fRede');
   const $loja = document.getElementById('fLoja'), $info = document.getElementById('lojaInfo');
   const $lista = document.getElementById('listaChecklists');
   let geo = null, geoOk = false;
+
+  const atualizarLojasComFiltro = () => {
+    const redeSelecionada = $rede.value;
+    let lojasFiltradas = [...(CFG.lojas || [])];
+    if (redeSelecionada) {
+      lojasFiltradas = lojasFiltradas.filter(l => l.rede === redeSelecionada);
+    }
+    lojasFiltradas.sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+
+    // Limpar opções e reconstruir
+    $loja.innerHTML = '<option value="">Selecione…</option>';
+    lojasFiltradas.forEach(l => {
+      const opt = document.createElement('option');
+      opt.value = l.cod;
+      opt.textContent = `${l.cod} — ${l.nome}`;
+      $loja.appendChild(opt);
+    });
+    $loja.value = '';
+    $info.textContent = '';
+  };
+
+  $rede.onchange = () => {
+    localStorage.setItem('ultimaRede', $rede.value);
+    atualizarLojasComFiltro();
+  };
 
   const bloquearChecklists = () => {
     $lista.querySelectorAll('[data-chk]').forEach(el => el.classList.toggle('desabilitada', !geoOk));
@@ -435,9 +471,9 @@ async function telaNovaVisita(){
         $err.scrollIntoView({behavior:'smooth', block:'center'});
         return;
       }
-      const tec = $tec.value, codLoja = $loja.value;
-      if (!tec || !codLoja){
-        $err.innerHTML = `<div class="aviso erro">Selecione o técnico e a loja antes de escolher o checklist.</div>`;
+      const tec = $tec.value, rede = $rede.value, codLoja = $loja.value;
+      if (!tec || !rede || !codLoja){
+        $err.innerHTML = `<div class="aviso erro">Selecione o técnico, a rede e a loja antes de escolher o checklist.</div>`;
         $err.scrollIntoView({behavior:'smooth', block:'center'});
         return;
       }
