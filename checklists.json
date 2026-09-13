@@ -1,0 +1,1217 @@
+{
+ "versao": "2026-09-13",
+ "checklists": [
+  {
+   "id": "rotina",
+   "titulo": "Inspeção de Rotina — Gerador",
+   "bloco": "Gerador",
+   "itens": [
+    {
+     "id": "rg_abrangencia",
+     "n": "1",
+     "secao": "Dados técnicos",
+     "pergunta": "Esse gerador é parcial ou total?",
+     "tipo": "opcoes",
+     "opcoes": [
+      "Total",
+      "Parcial"
+     ],
+     "foto": null,
+     "obs": false,
+     "prioridade": null,
+     "cond": null
+    },
+    {
+     "id": "rg_fabricante",
+     "n": "2",
+     "secao": "Dados técnicos",
+     "pergunta": "Fabricante do Gerador",
+     "tipo": "opcoes",
+     "opcoes": [
+      "Stemac",
+      "Cummins",
+      "MWM",
+      "Atlas Copco",
+      "Maxitrust",
+      "Rodo Agro",
+      "Outro"
+     ],
+     "foto": {
+      "sempre": true
+     },
+     "obs": false,
+     "prioridade": null,
+     "cond": null
+    },
+    {
+     "id": "rg_marca_motor",
+     "n": "3",
+     "secao": "Dados técnicos",
+     "pergunta": "Marca / Motor",
+     "tipo": "opcoes",
+     "opcoes": [
+      "Cummins",
+      "MWM",
+      "Perkins",
+      "Scania",
+      "Volvo Penta",
+      "Outro"
+     ],
+     "foto": {
+      "sempre": true
+     },
+     "obs": false,
+     "prioridade": null,
+     "cond": null
+    },
+    {
+     "id": "rg_fab_alternador",
+     "n": "4",
+     "secao": "Dados técnicos",
+     "pergunta": "Fabricante do alternador",
+     "tipo": "opcoes",
+     "opcoes": [
+      "WEG",
+      "Stamford",
+      "Mecc Alte",
+      "Outro"
+     ],
+     "foto": {
+      "sempre": true
+     },
+     "obs": false,
+     "prioridade": null,
+     "cond": null
+    },
+    {
+     "id": "rg_usca_controlador",
+     "n": "5",
+     "secao": "Dados técnicos",
+     "pergunta": "USCA / Controlador",
+     "tipo": "opcoes",
+     "opcoes": [
+      "Deep Sea",
+      "DEIF",
+      "Stemac",
+      "KVA",
+      "Outro"
+     ],
+     "foto": {
+      "sempre": true
+     },
+     "obs": false,
+     "prioridade": null,
+     "cond": null
+    },
+    {
+     "id": "rg_potencia_kva",
+     "n": "6",
+     "secao": "Dados técnicos",
+     "pergunta": "Potência (kVA)",
+     "tipo": "numero",
+     "opcoes": [],
+     "foto": {
+      "sempre": true
+     },
+     "obs": false,
+     "prioridade": null,
+     "cond": null
+    },
+    {
+     "id": "rg_tensao_v",
+     "n": "7",
+     "secao": "Dados técnicos",
+     "pergunta": "Tensão (V)",
+     "tipo": "opcoes",
+     "opcoes": [
+      "220",
+      "380"
+     ],
+     "foto": {
+      "sempre": true
+     },
+     "obs": false,
+     "prioridade": null,
+     "cond": null
+    },
+    {
+     "id": "rg_qtd_baterias",
+     "n": "8",
+     "secao": "Dados técnicos",
+     "pergunta": "Quantidade de Baterias",
+     "tipo": "opcoes",
+     "opcoes": [
+      "1 Bateria",
+      "2 Baterias"
+     ],
+     "foto": null,
+     "obs": false,
+     "prioridade": null,
+     "cond": null
+    },
+    {
+     "id": "rg_tensao_flutuacao_bat",
+     "n": "9",
+     "secao": "Dados técnicos",
+     "pergunta": "Qual a tensão de flutuação da bateria (V)?",
+     "tipo": "numero",
+     "opcoes": [],
+     "foto": {
+      "sempre": true
+     },
+     "obs": false,
+     "prioridade": null,
+     "cond": null
+    },
+    {
+     "id": "rg_qta_composicao",
+     "n": "10",
+     "secao": "Sistema de transferência",
+     "pergunta": "Composição do QTA",
+     "tipo": "opcoes",
+     "opcoes": [
+      "Contatoras",
+      "Disjuntores",
+      "Chave comutadora (I - 0 - II)"
+     ],
+     "foto": {
+      "sempre": true
+     },
+     "obs": false,
+     "prioridade": null,
+     "cond": null
+    },
+    {
+     "id": "rg_possui_qtm",
+     "n": "11",
+     "secao": "Sistema de transferência",
+     "pergunta": "Gerador possui QTM?",
+     "tipo": "opcoes",
+     "opcoes": [
+      "Sim",
+      "Não"
+     ],
+     "foto": {
+      "quando": "Sim"
+     },
+     "obs": false,
+     "prioridade": null,
+     "cond": null
+    },
+    {
+     "id": "rg_q1",
+     "n": "12",
+     "secao": "Checklist de rotina",
+     "pergunta": "1. Acessibilidade à sala desobstruída?",
+     "tipo": "opcoes",
+     "opcoes": [
+      "Sim",
+      "Não"
+     ],
+     "foto": {
+      "sempre": true
+     },
+     "obs": false,
+     "prioridade": "Alta",
+     "cond": null
+    },
+    {
+     "id": "rg_q2",
+     "n": "13",
+     "secao": "Checklist de rotina",
+     "pergunta": "2. Existe vestígio de insetos ou roedores?",
+     "tipo": "opcoes",
+     "opcoes": [
+      "Sim",
+      "Não"
+     ],
+     "foto": {
+      "quando": "Sim"
+     },
+     "obs": false,
+     "prioridade": "Média",
+     "cond": null
+    },
+    {
+     "id": "rg_q5",
+     "n": "14",
+     "secao": "Checklist de rotina",
+     "pergunta": "4. Gerador possui vazamentos de água ou óleo?",
+     "tipo": "opcoes",
+     "opcoes": [
+      "Sim",
+      "Não"
+     ],
+     "foto": {
+      "quando": "Sim"
+     },
+     "obs": false,
+     "prioridade": "Alta",
+     "cond": null
+    },
+    {
+     "id": "rg_q6",
+     "n": "15",
+     "secao": "Checklist de rotina",
+     "pergunta": "5. Baterias em bom estado?",
+     "tipo": "opcoes",
+     "opcoes": [
+      "Sim",
+      "Não"
+     ],
+     "foto": {
+      "sempre": true
+     },
+     "obs": false,
+     "prioridade": "Alta",
+     "cond": null
+    },
+    {
+     "id": "rg_q8",
+     "n": "17",
+     "secao": "Checklist de rotina",
+     "pergunta": "7. Conferido nível de água do radiador?",
+     "tipo": "opcoes",
+     "opcoes": [
+      "Sim",
+      "Não"
+     ],
+     "foto": null,
+     "obs": false,
+     "prioridade": "Alta",
+     "cond": null
+    },
+    {
+     "id": "rg_q9",
+     "n": "18",
+     "secao": "Checklist de rotina",
+     "pergunta": "8. Conferido nível de óleo lubrificante?",
+     "tipo": "opcoes",
+     "opcoes": [
+      "Sim",
+      "Não"
+     ],
+     "foto": {
+      "sempre": true
+     },
+     "obs": false,
+     "prioridade": "Alta",
+     "cond": null
+    },
+    {
+     "id": "rg_nivel_diesel",
+     "n": "19",
+     "secao": "Nível do diesel",
+     "pergunta": "9. Nível de combustível no tanque",
+     "tipo": "opcoes",
+     "opcoes": [
+      "25%",
+      "50%",
+      "75%",
+      "100%"
+     ],
+     "foto": {
+      "sempre": true
+     },
+     "obs": false,
+     "prioridade": null,
+     "cond": null
+    },
+    {
+     "id": "rg_corrente_a",
+     "n": "20",
+     "secao": "Medições",
+     "pergunta": "10. Corrente fase A B C do gerador operando",
+     "tipo": "numero",
+     "opcoes": [],
+     "foto": {
+      "sempre": true
+     },
+     "obs": false,
+     "prioridade": null,
+     "cond": null
+    },
+    {
+     "id": "rg_usca_auto",
+     "n": "21",
+     "secao": "Fechamento",
+     "pergunta": "13. USCA na posição Auto?",
+     "tipo": "opcoes",
+     "opcoes": [
+      "Sim",
+      "Não"
+     ],
+     "foto": {
+      "sempre": true
+     },
+     "obs": true,
+     "prioridade": "Crítica",
+     "cond": null
+    }
+   ]
+  },
+  {
+   "id": "preventiva",
+   "titulo": "Preventiva do Gerador",
+   "bloco": "Gerador",
+   "itens": [
+    {
+     "id": "rg_abrangencia",
+     "n": "1",
+     "secao": "Dados técnicos",
+     "pergunta": "Esse gerador é total ou parcial?",
+     "tipo": "opcoes",
+     "opcoes": [
+      "Total",
+      "Parcial"
+     ],
+     "foto": null,
+     "obs": false,
+     "prioridade": null,
+     "cond": null
+    },
+    {
+     "id": "rg_fabricante",
+     "n": "2",
+     "secao": "Dados técnicos",
+     "pergunta": "Fabricante do Gerador",
+     "tipo": "opcoes",
+     "opcoes": [
+      "Stemac",
+      "Cummins",
+      "MWM",
+      "Atlas Copco",
+      "Maxitrust",
+      "Rodo Agro",
+      "Outro"
+     ],
+     "foto": {
+      "sempre": true
+     },
+     "obs": false,
+     "prioridade": null,
+     "cond": null
+    },
+    {
+     "id": "rg_marca_motor",
+     "n": "3",
+     "secao": "Dados técnicos",
+     "pergunta": "Modelo e marca motor  a combustão",
+     "tipo": "opcoes",
+     "opcoes": [
+      "Cummins",
+      "MWM",
+      "Perkins",
+      "Scania",
+      "Volvo Penta",
+      "Outro"
+     ],
+     "foto": {
+      "sempre": true
+     },
+     "obs": false,
+     "prioridade": null,
+     "cond": null
+    },
+    {
+     "id": "rg_fab_alternador",
+     "n": "4",
+     "secao": "Dados técnicos",
+     "pergunta": "Fabricante do alternador",
+     "tipo": "opcoes",
+     "opcoes": [
+      "WEG",
+      "Stamford",
+      "Mecc Alte",
+      "Outro"
+     ],
+     "foto": {
+      "sempre": true
+     },
+     "obs": false,
+     "prioridade": null,
+     "cond": null
+    },
+    {
+     "id": "rg_usca_controlador",
+     "n": "5",
+     "secao": "Dados técnicos",
+     "pergunta": "USCA / Controlador",
+     "tipo": "opcoes",
+     "opcoes": [
+      "Deep Sea",
+      "DEIF",
+      "Stemac",
+      "KVA",
+      "Outro"
+     ],
+     "foto": {
+      "sempre": true
+     },
+     "obs": false,
+     "prioridade": null,
+     "cond": null
+    },
+    {
+     "id": "rg_potencia_kva",
+     "n": "6",
+     "secao": "Dados técnicos",
+     "pergunta": "Potência (kVA)",
+     "tipo": "numero",
+     "opcoes": [],
+     "foto": {
+      "sempre": true
+     },
+     "obs": false,
+     "prioridade": null,
+     "cond": null
+    },
+    {
+     "id": "rg_tensao_v",
+     "n": "7",
+     "secao": "Dados técnicos",
+     "pergunta": "Tensão (V)",
+     "tipo": "opcoes",
+     "opcoes": [
+      "220",
+      "380"
+     ],
+     "foto": {
+      "sempre": true
+     },
+     "obs": false,
+     "prioridade": null,
+     "cond": null
+    },
+    {
+     "id": "rg_tensao_flutuacao_bat",
+     "n": "8",
+     "secao": "Dados técnicos",
+     "pergunta": "Tensão de flutuação da bateria (V)?",
+     "tipo": "numero",
+     "opcoes": [],
+     "foto": {
+      "sempre": true
+     },
+     "obs": false,
+     "prioridade": null,
+     "cond": null
+    },
+    {
+     "id": "rg_qta_composicao",
+     "n": "9",
+     "secao": "Sistema de transferência",
+     "pergunta": "Composição do QTA",
+     "tipo": "opcoes",
+     "opcoes": [
+      "Contatoras",
+      "Disjuntores",
+      "Chave comutadora (I - 0 - II)"
+     ],
+     "foto": {
+      "sempre": true
+     },
+     "obs": false,
+     "prioridade": null,
+     "cond": null
+    },
+    {
+     "id": "rg_possui_qtm",
+     "n": "10",
+     "secao": "Sistema de transferência",
+     "pergunta": "Gerador possui QTM?",
+     "tipo": "opcoes",
+     "opcoes": [
+      "Sim",
+      "Não"
+     ],
+     "foto": {
+      "quando": "Sim"
+     },
+     "obs": false,
+     "prioridade": null,
+     "cond": null
+    },
+    {
+     "id": "rg_q1",
+     "n": "11",
+     "secao": "Checklist de rotina",
+     "pergunta": "1. Acessibilidade à sala desobstruída?",
+     "tipo": "opcoes",
+     "opcoes": [
+      "Sim",
+      "Não"
+     ],
+     "foto": {
+      "sempre": true
+     },
+     "obs": false,
+     "prioridade": "Alta",
+     "cond": null
+    },
+    {
+     "id": "rg_q2",
+     "n": "12",
+     "secao": "Checklist de rotina",
+     "pergunta": "2. Existe vestígio de insetos ou roedores?",
+     "tipo": "opcoes",
+     "opcoes": [
+      "Sim",
+      "Não"
+     ],
+     "foto": {
+      "quando": "Sim"
+     },
+     "obs": false,
+     "prioridade": "Média",
+     "cond": null
+    },
+    {
+     "id": "rg_q5",
+     "n": "13",
+     "secao": "Checklist de rotina",
+     "pergunta": "4. Gerador possui vazamentos de água ou óleo?",
+     "tipo": "opcoes",
+     "opcoes": [
+      "Sim",
+      "Não"
+     ],
+     "foto": {
+      "quando": "Sim"
+     },
+     "obs": false,
+     "prioridade": "Alta",
+     "cond": null
+    },
+    {
+     "id": "rg_q8",
+     "n": "14",
+     "secao": "Checklist de rotina",
+     "pergunta": "7. Conferido nível de água do radiador?",
+     "tipo": "opcoes",
+     "opcoes": [
+      "Sim",
+      "Não"
+     ],
+     "foto": null,
+     "obs": false,
+     "prioridade": "Alta",
+     "cond": null
+    },
+    {
+     "id": "rg_q9",
+     "n": "15",
+     "secao": "Checklist de rotina",
+     "pergunta": "8. Conferido nível de óleo lubrificante?",
+     "tipo": "opcoes",
+     "opcoes": [
+      "Sim",
+      "Não"
+     ],
+     "foto": {
+      "sempre": true
+     },
+     "obs": false,
+     "prioridade": "Alta",
+     "cond": null
+    },
+    {
+     "id": "rg_nivel_diesel",
+     "n": "16",
+     "secao": "Nível do diesel",
+     "pergunta": "9. Nível de combustível no tanque",
+     "tipo": "opcoes",
+     "opcoes": [
+      "25%",
+      "50%",
+      "75%",
+      "100%"
+     ],
+     "foto": {
+      "sempre": true
+     },
+     "obs": false,
+     "prioridade": null,
+     "cond": null
+    },
+    {
+     "id": "rg_corrente_a",
+     "n": "17",
+     "secao": "Medições",
+     "pergunta": "10. Corrente fase A B C do gerador operando",
+     "tipo": "numero",
+     "opcoes": [],
+     "foto": {
+      "sempre": true
+     },
+     "obs": false,
+     "prioridade": null,
+     "cond": null
+    },
+    {
+     "id": "pg_int_filtro_oleo",
+     "n": "18",
+     "secao": "Intervenções da Preventiva",
+     "pergunta": "Foi trocado o filtro de óleo?",
+     "tipo": "opcoes",
+     "opcoes": [
+      "Sim",
+      "Não"
+     ],
+     "foto": null,
+     "obs": true,
+     "prioridade": "Alta",
+     "cond": null
+    },
+    {
+     "id": "pg_int_filtro_oleo_modelo",
+     "n": "19",
+     "secao": "Intervenções da Preventiva",
+     "pergunta": "Qual modelo do filtro de óleo?",
+     "tipo": "texto",
+     "opcoes": [],
+     "foto": {
+      "sempre": true
+     },
+     "obs": false,
+     "prioridade": null,
+     "cond": null
+    },
+    {
+     "id": "pg_int_filtro_ar",
+     "n": "20",
+     "secao": "Intervenções da Preventiva",
+     "pergunta": "Foi trocado o filtro de ar?",
+     "tipo": "opcoes",
+     "opcoes": [
+      "Sim",
+      "Não"
+     ],
+     "foto": null,
+     "obs": true,
+     "prioridade": "Alta",
+     "cond": null
+    },
+    {
+     "id": "pg_int_filtro_ar_modelo",
+     "n": "21",
+     "secao": "Intervenções da Preventiva",
+     "pergunta": "Qual modelo do filtro de ar?",
+     "tipo": "texto",
+     "opcoes": [],
+     "foto": {
+      "sempre": true
+     },
+     "obs": false,
+     "prioridade": null,
+     "cond": null
+    },
+    {
+     "id": "pg_int_possui_filtro_agua",
+     "n": "22",
+     "secao": "Intervenções da Preventiva",
+     "pergunta": "Gerador possui filtro de água?",
+     "tipo": "opcoes",
+     "opcoes": [
+      "Sim",
+      "Não"
+     ],
+     "foto": {
+      "quando": "Sim"
+     },
+     "obs": false,
+     "prioridade": null,
+     "cond": null
+    },
+    {
+     "id": "pg_int_filtro_agua_modelo",
+     "n": "23",
+     "secao": "Intervenções da Preventiva",
+     "pergunta": "Qual modelo do filtro de água?",
+     "tipo": "texto",
+     "opcoes": [],
+     "foto": {
+      "sempre": true
+     },
+     "obs": false,
+     "prioridade": null,
+     "cond": {
+      "id": "pg_int_possui_filtro_agua",
+      "igual": "Sim"
+     }
+    },
+    {
+     "id": "pg_int_oleo_motor",
+     "n": "24",
+     "secao": "Intervenções da Preventiva",
+     "pergunta": "Foi trocado o óleo lubrificante do motor?",
+     "tipo": "opcoes",
+     "opcoes": [
+      "Sim",
+      "Não"
+     ],
+     "foto": null,
+     "obs": true,
+     "prioridade": "Alta",
+     "cond": null
+    },
+    {
+     "id": "pg_int_qtd_litros_oleo",
+     "n": "25",
+     "secao": "Intervenções da Preventiva",
+     "pergunta": "Quantos litros de óleo lubrificante foram colocados no gerador?",
+     "tipo": "numero",
+     "opcoes": [],
+     "foto": {
+      "sempre": true
+     },
+     "obs": false,
+     "prioridade": null,
+     "cond": null
+    },
+    {
+     "id": "pg_int_qtd_baterias_trocadas",
+     "n": "26",
+     "secao": "Intervenções da Preventiva",
+     "pergunta": "Quantas baterias foram trocadas?",
+     "tipo": "opcoes",
+     "opcoes": [
+      "Nenhuma",
+      "1 Bateria",
+      "2 Baterias"
+     ],
+     "foto": {
+      "sempre": true
+     },
+     "obs": false,
+     "prioridade": null,
+     "cond": null
+    },
+    {
+     "id": "pg_int_carregador_bat",
+     "n": "27",
+     "secao": "Intervenções da Preventiva",
+     "pergunta": "O carregador de bateria está ligado e operando corretamente?",
+     "tipo": "opcoes",
+     "opcoes": [
+      "Sim",
+      "Não"
+     ],
+     "foto": {
+      "sempre": true
+     },
+     "obs": true,
+     "prioridade": "Crítica",
+     "cond": null
+    },
+    {
+     "id": "pg_obs_fechamento",
+     "n": "28",
+     "secao": "Fechamento",
+     "pergunta": "Observações adicional da preventiva",
+     "tipo": "opcoes",
+     "opcoes": [
+      "Sim",
+      "Não"
+     ],
+     "foto": {
+      "quando": "Sim"
+     },
+     "obs": false,
+     "prioridade": null,
+     "cond": null
+    },
+    {
+     "id": "pg_usca_auto",
+     "n": "29",
+     "secao": "Fechamento",
+     "pergunta": "USCA na posição Auto?",
+     "tipo": "opcoes",
+     "opcoes": [
+      "Sim",
+      "Não"
+     ],
+     "foto": {
+      "sempre": true
+     },
+     "obs": true,
+     "prioridade": "Crítica",
+     "cond": null
+    }
+   ]
+  },
+  {
+   "id": "subestacao",
+   "titulo": "Inspeção de Rotina — Subestação",
+   "bloco": "Subestação",
+   "itens": [
+    {
+     "id": "sub_q1",
+     "n": "1",
+     "secao": "Checklist da Subestação",
+     "pergunta": "1. A iluminação da subestação está funcionando corretamente?",
+     "tipo": "tristate",
+     "opcoes": [
+      "Sim",
+      "Não",
+      "Não se aplica"
+     ],
+     "foto": {
+      "sempre": true
+     },
+     "obs": false,
+     "prioridade": "Alta",
+     "cond": null
+    },
+    {
+     "id": "sub_q2",
+     "n": "2",
+     "secao": "Checklist da Subestação",
+     "pergunta": "2. Os fusíveis de média tensão estão em bom estado, sem aquecimento ou oxidação?",
+     "tipo": "tristate",
+     "opcoes": [
+      "Sim",
+      "Não",
+      "Não se aplica"
+     ],
+     "foto": {
+      "sempre": true
+     },
+     "obs": false,
+     "prioridade": "Crítica",
+     "cond": null
+    },
+    {
+     "id": "sub_q3",
+     "n": "3",
+     "secao": "Checklist da Subestação",
+     "pergunta": "3. A subestação possui relé de proteção?",
+     "tipo": "tristate",
+     "opcoes": [
+      "Sim",
+      "Não",
+      "Não se aplica"
+     ],
+     "foto": {
+      "sempre": true
+     },
+     "obs": false,
+     "prioridade": "Alta",
+     "cond": null
+    },
+    {
+     "id": "sub_q4_rele_operando",
+     "n": "4",
+     "secao": "Checklist da Subestação",
+     "pergunta": "4. O relé está ligado, sem falhas e operando normalmente?",
+     "tipo": "tristate",
+     "opcoes": [
+      "Sim",
+      "Não",
+      "Não se aplica"
+     ],
+     "foto": {
+      "sempre": true
+     },
+     "obs": false,
+     "prioridade": "Crítica",
+     "cond": {
+      "id": "sub_q3",
+      "igual": "Sim"
+     }
+    },
+    {
+     "id": "sub_q5",
+     "n": "5",
+     "secao": "Checklist da Subestação",
+     "pergunta": "5. Luvas isolantes presentes e em bom estado?",
+     "tipo": "tristate",
+     "opcoes": [
+      "Sim",
+      "Não",
+      "Não se aplica"
+     ],
+     "foto": {
+      "sempre": true
+     },
+     "obs": false,
+     "prioridade": "Alta",
+     "cond": null
+    },
+    {
+     "id": "sub_q6",
+     "n": "6",
+     "secao": "Checklist da Subestação",
+     "pergunta": "6. Tapete de borracha isolante presente e em bom estado?",
+     "tipo": "tristate",
+     "opcoes": [
+      "Sim",
+      "Não",
+      "Não se aplica"
+     ],
+     "foto": {
+      "sempre": true
+     },
+     "obs": false,
+     "prioridade": "Alta",
+     "cond": null
+    },
+    {
+     "id": "sub_q7",
+     "n": "7",
+     "secao": "Checklist da Subestação",
+     "pergunta": "7. Sala da subestação limpa e livre de entulhos?",
+     "tipo": "tristate",
+     "opcoes": [
+      "Sim",
+      "Não",
+      "Não se aplica"
+     ],
+     "foto": {
+      "sempre": true
+     },
+     "obs": false,
+     "prioridade": "Média",
+     "cond": null
+    },
+    {
+     "id": "sub_q8",
+     "n": "8",
+     "secao": "Checklist da Subestação",
+     "pergunta": "8. Existe vestígio de insetos, pássaros ou roedores?",
+     "tipo": "tristate",
+     "opcoes": [
+      "Sim",
+      "Não",
+      "Não se aplica"
+     ],
+     "foto": {
+      "quando": "Sim"
+     },
+     "obs": false,
+     "prioridade": "Alta",
+     "cond": null
+    },
+    {
+     "id": "sub_obs",
+     "n": "9",
+     "secao": "Fechamento",
+     "pergunta": "Observações pertinentes da subestação",
+     "tipo": "texto_amplo",
+     "opcoes": [],
+     "foto": {
+      "sempre": true
+     },
+     "obs": false,
+     "prioridade": null,
+     "cond": null
+    }
+   ]
+  },
+  {
+   "id": "capacitores",
+   "titulo": "Inspeção — Banco de Capacitores",
+   "bloco": "Banco de Capacitores",
+   "itens": [
+    {
+     "id": "cap_foto_porta_fechada",
+     "n": "1",
+     "secao": "Visão geral",
+     "pergunta": "Foto do banco de capacitores com a porta fechada",
+     "tipo": "foto",
+     "opcoes": [],
+     "foto": {
+      "sempre": true
+     },
+     "obs": false,
+     "prioridade": null,
+     "cond": null
+    },
+    {
+     "id": "cap_foto_porta_aberta",
+     "n": "2",
+     "secao": "Visão geral",
+     "pergunta": "Foto do banco de capacitores com a porta aberta",
+     "tipo": "foto",
+     "opcoes": [],
+     "foto": {
+      "sempre": true
+     },
+     "obs": false,
+     "prioridade": null,
+     "cond": null
+    },
+    {
+     "id": "cap_potencia_kvar",
+     "n": "3",
+     "secao": "Visão geral",
+     "pergunta": "Potência total do banco em kvar",
+     "tipo": "numero",
+     "opcoes": [],
+     "foto": {
+      "sempre": true
+     },
+     "obs": false,
+     "prioridade": null,
+     "cond": null
+    },
+    {
+     "id": "cap_op_ligado",
+     "n": "4",
+     "secao": "Inspeção operacional",
+     "pergunta": "1. O banco de capacitores está ligado?",
+     "tipo": "tristate",
+     "opcoes": [
+      "Sim",
+      "Não",
+      "Não se aplica"
+     ],
+     "foto": {
+      "sempre": true
+     },
+     "obs": false,
+     "prioridade": "Alta",
+     "cond": null
+    },
+    {
+     "id": "cap_op_automatico",
+     "n": "5",
+     "secao": "Inspeção operacional",
+     "pergunta": "2. As células capacitivas estão em automático?",
+     "tipo": "tristate",
+     "opcoes": [
+      "Sim",
+      "Não",
+      "Não se aplica"
+     ],
+     "foto": {
+      "sempre": true
+     },
+     "obs": false,
+     "prioridade": "Alta",
+     "cond": null
+    },
+    {
+     "id": "cap_op_temperatura",
+     "n": "6",
+     "secao": "Inspeção operacional",
+     "pergunta": "3. A temperatura das células e dos cabos está normal?",
+     "tipo": "tristate",
+     "opcoes": [
+      "Sim",
+      "Não",
+      "Não se aplica"
+     ],
+     "foto": {
+      "sempre": true
+     },
+     "obs": false,
+     "prioridade": "Crítica",
+     "cond": null
+    },
+    {
+     "id": "cap_op_disjuntores",
+     "n": "7",
+     "secao": "Inspeção operacional",
+     "pergunta": "4. Os disjuntores estão em bom estado e armados?",
+     "tipo": "tristate",
+     "opcoes": [
+      "Sim",
+      "Não",
+      "Não se aplica"
+     ],
+     "foto": {
+      "sempre": true
+     },
+     "obs": false,
+     "prioridade": "Crítica",
+     "cond": null
+    },
+    {
+     "id": "cap_op_contatores",
+     "n": "8",
+     "secao": "Inspeção operacional",
+     "pergunta": "5. Os contatores estão operando sem ruído ou centelhamento?",
+     "tipo": "tristate",
+     "opcoes": [
+      "Sim",
+      "Não",
+      "Não se aplica"
+     ],
+     "foto": {
+      "sempre": true
+     },
+     "obs": false,
+     "prioridade": "Alta",
+     "cond": null
+    },
+    {
+     "id": "cap_op_celulas_estufamento",
+     "n": "9",
+     "secao": "Inspeção operacional",
+     "pergunta": "6. As células estão sem estufamento ou vazamento?",
+     "tipo": "tristate",
+     "opcoes": [
+      "Sim",
+      "Não",
+      "Não se aplica"
+     ],
+     "foto": {
+      "sempre": true
+     },
+     "obs": false,
+     "prioridade": "Crítica",
+     "cond": null
+    },
+    {
+     "id": "cap_op_ventilador",
+     "n": "10",
+     "secao": "Inspeção operacional",
+     "pergunta": "7. O ventilador está funcionando corretamente?",
+     "tipo": "tristate",
+     "opcoes": [
+      "Sim",
+      "Não",
+      "Não se aplica"
+     ],
+     "foto": {
+      "sempre": true
+     },
+     "obs": false,
+     "prioridade": "Média",
+     "cond": null
+    },
+    {
+     "id": "cap_ef_reativo_medidor",
+     "n": "11",
+     "secao": "Eficiência",
+     "pergunta": "Reativo registrado no medidor da concessionária",
+     "tipo": "foto",
+     "opcoes": [],
+     "foto": {
+      "sempre": true
+     },
+     "obs": false,
+     "prioridade": null,
+     "cond": null
+    },
+    {
+     "id": "cap_obs",
+     "n": "12",
+     "secao": "Fechamento",
+     "pergunta": "Observações pertinentes do banco de capacitores",
+     "tipo": "texto_amplo",
+     "opcoes": [],
+     "foto": {
+      "sempre": true
+     },
+     "obs": false,
+     "prioridade": null,
+     "cond": null
+    }
+   ]
+  }
+ ],
+ "tecnicos": [],
+ "lojas": []
+}
