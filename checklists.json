@@ -1,5 +1,5 @@
 {
- "versao": "2026-09-13 19:42",
+ "versao": "2026-09-13 20:30",
  "checklists": [
   {
    "id": "rotina",
@@ -4663,7 +4663,7 @@
   },
   {
    "cod": "D015",
-   "nome": "",
+   "nome": "CEN. DISTRIBUIÇÃO",
    "endereco": "AVENIDA APIO CARDOSO, 200, CINCÃO, CONTAGEM - MG",
    "rede": "DMA",
    "bandeira": "CEN. DISTRIBUIÇÃO",
@@ -5769,7 +5769,7 @@
   },
   {
    "cod": "D129",
-   "nome": "",
+   "nome": "ADMINISTRATIVO",
    "endereco": "RODOVIA BR 040, 527 , ST01, VILA PARIS, CONTAGEM - NA",
    "rede": "DMA",
    "bandeira": "ADMINISTRATIVO",
