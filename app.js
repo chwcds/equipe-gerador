@@ -248,6 +248,9 @@ async function telaInicio(){
   const linha = v => {
     const chk = CFG.checklists.find(c => c.id === v.checklist);
     const nc = v.finalizada ? contarNC(chk, v) : 0;
+    const excluir = !v.finalizada
+      ? `<button type="button" class="btn-excluir" data-excluir="${esc(v.id)}" aria-label="Excluir rascunho" title="Excluir rascunho">🗑</button>`
+      : '';
     return `<div class="linha-lista" data-abrir="${v.id}">
       <div class="cresce">
         <div class="t">${esc(v.loja.cod)} — ${esc(v.loja.nome || 'sem nome')}</div>
@@ -255,6 +258,7 @@ async function telaInicio(){
           nc ? ` · <strong style="color:var(--vermelho)">${nc} não conforme${nc>1?'s':''}</strong>` : ''}</div>
       </div>
       <span class="pilula ${v.finalizada ? 'pronta' : 'rascunho'}">${v.finalizada ? 'finalizada' : 'rascunho'}</span>
+      ${excluir}
     </div>`;
   };
   const rasc = vs.filter(v => !v.finalizada), fim = vs.filter(v => v.finalizada);
@@ -273,6 +277,20 @@ async function telaInicio(){
     el.onclick = async () => {
       visita = await BD.lerVisita(el.dataset.abrir);
       visita.finalizada ? telaRelatorio() : telaChecklist();
+    };
+  });
+  $tela.querySelectorAll('[data-excluir]').forEach(btn => {
+    btn.onclick = async (e) => {
+      e.stopPropagation();
+      const id = btn.dataset.excluir;
+      if (!confirm('Excluir este rascunho? As respostas e fotos dele serão apagadas e isso não pode ser desfeito.')) return;
+      const v = await BD.lerVisita(id);
+      if (v){
+        const idsFoto = Object.values(v.fotos || {}).flat();
+        for (const fid of idsFoto) await BD.apagarFoto(fid);
+      }
+      await BD.apagarVisita(id);
+      telaInicio();
     };
   });
 }
