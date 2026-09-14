@@ -59,6 +59,14 @@ function horaBR(iso){
   return `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
 }
 
+/* opção "Outro": o técnico digita o nome; a resposta gravada é o texto digitado
+   (e não a palavra "Outro"), assim o PDF e o cadastro da loja recebem o nome real */
+function temOutro(it){ return it.tipo === 'opcoes' && (it.opcoes || []).includes('Outro'); }
+function ehOutro(it, r){
+  return temOutro(it) && r != null && r !== '' && !it.opcoes.filter(o => o !== 'Outro').includes(r);
+}
+function respostaVazia(it, r){ return r == null || r === '' || (r === 'Outro' && temOutro(it)); }
+
 /* ===================== regra de conformidade =====================
    Mesma regra conferida contra os 33 relatórios em PDF:
    perguntas numeradas de Sim/Não são conformidade; em "Existe vestígio..."
@@ -152,7 +160,7 @@ function salvarLojaNova(loja){
 function salvarDadosTecnicosSeCompleto(chk, v){
   const campos = camposTecnicosDoBloco(chk.bloco);
   if (!campos.length || v._dtBloqueado) return;
-  if (!campos.every(c => v.respostas[c.id] != null && String(v.respostas[c.id]).trim() !== '')) return;
+  if (!campos.every(c => !respostaVazia(c, v.respostas[c.id]) && String(v.respostas[c.id]).trim() !== '')) return;
   const l = encontrarLoja(v.loja.cod);
   if (!l) return;
   const valores = {};
@@ -171,7 +179,7 @@ function pendencias(chk, v){
   for (const it of itensDoChecklist(chk, v)){
     if (!visivel(it, v.respostas)) continue;
     const r = v.respostas[it.id];
-    const semResposta = (it.tipo === 'foto') ? false : (r == null || r === '');
+    const semResposta = (it.tipo === 'foto') ? false : respostaVazia(it, r);
     const fotos = (v.fotos[it.id] || []);
     const semFoto = (it.tipo === 'foto' ? true : exigeFoto(it, r)) && fotos.length === 0;
     if (semResposta || semFoto) faltando.push({item: it, semResposta, semFoto});
@@ -559,9 +567,14 @@ function htmlItem(it){
     entrada = `<div class="opcoes">${it.opcoes.map(o => {
       const cls = RUINS.includes(o.toLowerCase()) ? 'ruim'
                 : o.toLowerCase().startsWith('não se aplica') ? 'na' : '';
+      const marcado = (r === o) || (o === 'Outro' && ehOutro(it, r));
       return `<button type="button" class="${cls}" data-op="${esc(it.id)}" data-val="${esc(o)}"
-        aria-pressed="${r === o}">${esc(o)}</button>`;
+        aria-pressed="${marcado}">${esc(o)}</button>`;
     }).join('')}</div>`;
+    if (temOutro(it)){
+      entrada += `<input type="text" data-outro="${esc(it.id)}" class="${ehOutro(it, r) ? '' : 'oculto'}"
+        style="margin-top:9px" placeholder="Qual? Digite o nome" value="${esc(r === 'Outro' ? '' : (ehOutro(it, r) ? r : ''))}">`;
+    }
   } else if (it.tipo === 'numero'){
     entrada = `<input type="text" inputmode="decimal" data-in="${esc(it.id)}"
        value="${esc(r || '')}" placeholder="Digite o valor">`;
@@ -584,9 +597,18 @@ function ligarItens(chk, itens){
   $tela.querySelectorAll('[data-op]').forEach(b => {
     b.onclick = async () => {
       const id = b.dataset.op, val = b.dataset.val;
-      visita.respostas[id] = (visita.respostas[id] === val) ? '' : val;
+      const it = itens.find(i => i.id === id);
+      const jaMarcado = (val === 'Outro') ? ehOutro(it, visita.respostas[id]) : (visita.respostas[id] === val);
+      visita.respostas[id] = jaMarcado ? '' : val;
+      const r = visita.respostas[id];
       $tela.querySelectorAll(`[data-op="${CSS.escape(id)}"]`).forEach(x =>
-        x.setAttribute('aria-pressed', String(visita.respostas[id] === x.dataset.val)));
+        x.setAttribute('aria-pressed', String((r === x.dataset.val) || (x.dataset.val === 'Outro' && ehOutro(it, r)))));
+      const cx = $tela.querySelector(`[data-outro="${CSS.escape(id)}"]`);
+      if (cx){
+        const mostrar = ehOutro(it, r);
+        cx.classList.toggle('oculto', !mostrar);
+        if (mostrar){ cx.value = (r === 'Outro') ? '' : r; cx.focus(); } else cx.value = '';
+      }
       salvarDadosTecnicosSeCompleto(chk, visita);
       await BD.salvarVisita(visita);
       redesenhar(chk, itens);
@@ -594,6 +616,10 @@ function ligarItens(chk, itens){
   });
   $tela.querySelectorAll('[data-in]').forEach(el => {
     el.oninput = () => { visita.respostas[el.dataset.in] = el.value; };
+    el.onblur  = async () => { salvarDadosTecnicosSeCompleto(chk, visita); await BD.salvarVisita(visita); redesenhar(chk, itens); };
+  });
+  $tela.querySelectorAll('[data-outro]').forEach(el => {
+    el.oninput = () => { visita.respostas[el.dataset.outro] = el.value.trim() || 'Outro'; };
     el.onblur  = async () => { salvarDadosTecnicosSeCompleto(chk, visita); await BD.salvarVisita(visita); redesenhar(chk, itens); };
   });
   $tela.querySelectorAll('[data-obs]').forEach(el => {
@@ -652,7 +678,7 @@ function pintarItem(it){
   const sit = situacao(it, r);
   const temFoto = (visita.fotos[it.id] || []).length > 0;
   const faltaFoto = ((it.tipo === 'foto') || exigeFoto(it, r)) && !temFoto;
-  const respondido = it.tipo === 'foto' ? temFoto : (r != null && r !== '');
+  const respondido = it.tipo === 'foto' ? temFoto : !respostaVazia(it, r);
   el.classList.toggle('nao-conforme', sit === 'Não conforme');
   el.classList.toggle('respondido', respondido && !faltaFoto && sit !== 'Não conforme');
   el.classList.toggle('pendente-obrig', respondido && faltaFoto);
