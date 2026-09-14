@@ -150,11 +150,19 @@ textarea{min-height:76px;resize:vertical}
 #relatorio .nc{color:var(--vermelho);font-weight:700}
 #relatorio .fotos-rel{display:flex;flex-wrap:wrap;gap:5px;margin-top:5px}
 #relatorio .fotos-rel img{width:104px;height:104px;object-fit:cover;border:1px solid var(--linha);border-radius:5px}
+/* folha de impressão: @page sem margem tira o cabeçalho/rodapé do navegador (URL, data, título);
+   as margens de cada página vêm do thead/tfoot da tabela .folha, que o Chrome repete em toda página */
+#relatorio table.folha{width:100%;border-collapse:collapse;margin-bottom:0}
+#relatorio .folha td.topo,#relatorio .folha td.rodape{height:0;padding:0;border:0}
+#relatorio .folha td.miolo{padding:0;border:0;vertical-align:top}
 @media print{
+  @page{margin:0}
   header,.barra-baixo,.nao-imprime{display:none!important}
   body{background:#fff}
   main{padding:0;max-width:none}
   #relatorio{padding:0}
+  #relatorio .folha td.topo,#relatorio .folha td.rodape{height:12mm}
+  #relatorio .folha td.miolo{padding:0 12mm}
   #relatorio table{page-break-inside:auto}
   #relatorio tr{page-break-inside:avoid}
 }
