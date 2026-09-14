@@ -99,6 +99,9 @@ const visivel = (item, respostas) => {
 function exigeFoto(item, resp){
   if (item._bloqueado) return false; // dado técnico já cadastrado da loja: não pede foto de novo
   if (!item.foto) return false;
+  // pergunta de opções: resposta escolhida entre as opções dispensa foto;
+  // só exige foto quando o técnico marcou "Outro" e digitou um nome
+  if (item.foto.sempre && (item.tipo === 'opcoes' || item.tipo === 'tristate')) return ehOutro(item, resp);
   if (item.foto.sempre) return true;
   if (item.foto.quando) return resp != null &&
     String(resp).trim().toLowerCase() === String(item.foto.quando).trim().toLowerCase();
@@ -375,7 +378,7 @@ async function telaNovaVisita(){
     ${CFG.checklists.map(c => `
       <div class="linha-lista desabilitada" data-chk="${c.id}">
         <div class="cresce"><div class="t">${esc(c.titulo)}</div>
-        <div class="s">${c.itens.length} itens · ${c.itens.filter(i=>i.foto).length} com foto</div></div>
+        <div class="s">${c.itens.length} itens · ${c.itens.filter(i => i.foto && (i.foto.quando || !(i.tipo === 'opcoes' || i.tipo === 'tristate') || temOutro(i))).length} com foto</div></div>
         <span style="color:var(--cinza);font-size:20px">›</span>
       </div>`).join('')}
     </div>
@@ -561,7 +564,11 @@ function htmlItem(it){
     </div>`;
   }
   const prio = it.prioridade ? `<span class="tag ${CLASSE_PRIO[it.prioridade]||'media'}">${esc(it.prioridade)}</span>` : '';
-  const tagFoto = it.foto ? `<span class="tag foto">foto${it.foto.quando ? ` se ${esc(it.foto.quando)}` : ''}</span>` : '';
+  let rotuloFoto = '';
+  if (it.foto && it.foto.quando) rotuloFoto = `foto se ${it.foto.quando}`;
+  else if (it.foto && it.foto.sempre && (it.tipo === 'opcoes' || it.tipo === 'tristate')) rotuloFoto = temOutro(it) ? 'foto se Outro' : '';
+  else if (it.foto) rotuloFoto = 'foto';
+  const tagFoto = rotuloFoto ? `<span class="tag foto">${esc(rotuloFoto)}</span>` : '';
   let entrada = '';
   if (it.tipo === 'opcoes' || it.tipo === 'tristate'){
     entrada = `<div class="opcoes">${it.opcoes.map(o => {
