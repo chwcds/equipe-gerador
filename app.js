@@ -67,6 +67,17 @@ function ehOutro(it, r){
 }
 function respostaVazia(it, r){ return r == null || r === '' || (r === 'Outro' && temOutro(it)); }
 
+/* rede da visita: nas lojas do Supermercados BH a foto continua obrigatória em toda
+   pergunta de opções; nas lojas da DMA (EPA/Mineirão) a resposta escolhida entre as
+   opções dispensa foto (só exige quando marca "Outro") */
+function redeDaVisita(v){
+  v = v || visita;
+  if (!v || !v.loja) return null;
+  const l = encontrarLoja(v.loja.cod);
+  return (l && l.rede) || v.loja.rede || null;
+}
+function opcoesDispensamFoto(rede){ return rede != null && rede !== 'Supermercados BH'; }
+
 /* ===================== regra de conformidade =====================
    Mesma regra conferida contra os 33 relatórios em PDF:
    perguntas numeradas de Sim/Não são conformidade; em "Existe vestígio..."
@@ -101,7 +112,7 @@ function exigeFoto(item, resp){
   if (!item.foto) return false;
   // pergunta de opções: resposta escolhida entre as opções dispensa foto;
   // só exige foto quando o técnico marcou "Outro" e digitou um nome
-  if (item.foto.sempre && (item.tipo === 'opcoes' || item.tipo === 'tristate')) return ehOutro(item, resp);
+  if (item.foto.sempre && (item.tipo === 'opcoes' || item.tipo === 'tristate') && opcoesDispensamFoto(redeDaVisita())) return ehOutro(item, resp);
   if (item.foto.sempre) return true;
   if (item.foto.quando) return resp != null &&
     String(resp).trim().toLowerCase() === String(item.foto.quando).trim().toLowerCase();
@@ -378,7 +389,7 @@ async function telaNovaVisita(){
     ${CFG.checklists.map(c => `
       <div class="linha-lista desabilitada" data-chk="${c.id}">
         <div class="cresce"><div class="t">${esc(c.titulo)}</div>
-        <div class="s">${c.itens.length} itens · ${c.itens.filter(i => i.foto && (i.foto.quando || !(i.tipo === 'opcoes' || i.tipo === 'tristate') || temOutro(i))).length} com foto</div></div>
+        <div class="s" data-resumo="${c.id}"></div></div>
         <span style="color:var(--cinza);font-size:20px">›</span>
       </div>`).join('')}
     </div>
@@ -393,7 +404,17 @@ async function telaNovaVisita(){
   const $lista = document.getElementById('listaChecklists');
   let geo = null, geoOk = false;
 
+  const atualizarResumos = () => {
+    const dispensa = opcoesDispensamFoto($rede.value);
+    CFG.checklists.forEach(c => {
+      const el = $lista.querySelector(`[data-resumo="${CSS.escape(c.id)}"]`);
+      if (!el) return;
+      const comFoto = c.itens.filter(i => i.foto && (i.foto.quando || !dispensa || !(i.tipo === 'opcoes' || i.tipo === 'tristate') || temOutro(i))).length;
+      el.textContent = `${c.itens.length} itens · ${comFoto} com foto`;
+    });
+  };
   const atualizarLojasComFiltro = () => {
+    atualizarResumos();
     const redeSelecionada = $rede.value;
     let lojasFiltradas = [...(CFG.lojas || [])];
     if (redeSelecionada) {
@@ -510,7 +531,7 @@ async function telaNovaVisita(){
       visita = {
         id: uid(), criadoEm: new Date().toISOString(), finalizada: false,
         tecnico: tec,
-        loja: {cod: loja.cod, nome: loja.nome, endereco: loja.endereco || ''},
+        loja: {cod: loja.cod, nome: loja.nome, endereco: loja.endereco || '', rede: loja.rede || rede},
         matricula: document.getElementById('fMat').value.trim(),
         geo, checklist: el.dataset.chk, respostas, obs: {}, fotos: {},
         _dtBloqueado: bloqueado
@@ -566,7 +587,7 @@ function htmlItem(it){
   const prio = it.prioridade ? `<span class="tag ${CLASSE_PRIO[it.prioridade]||'media'}">${esc(it.prioridade)}</span>` : '';
   let rotuloFoto = '';
   if (it.foto && it.foto.quando) rotuloFoto = `foto se ${it.foto.quando}`;
-  else if (it.foto && it.foto.sempre && (it.tipo === 'opcoes' || it.tipo === 'tristate')) rotuloFoto = temOutro(it) ? 'foto se Outro' : '';
+  else if (it.foto && it.foto.sempre && (it.tipo === 'opcoes' || it.tipo === 'tristate') && opcoesDispensamFoto(redeDaVisita())) rotuloFoto = temOutro(it) ? 'foto se Outro' : '';
   else if (it.foto) rotuloFoto = 'foto';
   const tagFoto = rotuloFoto ? `<span class="tag foto">${esc(rotuloFoto)}</span>` : '';
   let entrada = '';
