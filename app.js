@@ -321,13 +321,12 @@ async function telaNovaVisita(){
         </select>
       </label>
 
-      <label class="campo"><span>Rede que está atendendo</span>
-        <select id="fRede">
-          <option value="">Selecione…</option>
+      <div class="campo" style="margin-bottom:14px"><span style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:5px">Rede que está atendendo</span>
+        <div class="opcoes" id="fRede">
           ${redes.map(r =>
-            `<option value="${esc(r)}" ${r === ultimaRede ? 'selected' : ''}>${esc(r)}</option>`).join('')}
-        </select>
-      </label>
+            `<button type="button" data-rede="${esc(r)}" aria-pressed="${r === ultimaRede ? 'true' : 'false'}">${esc(r)}</button>`).join('')}
+        </div>
+      </div>
 
       <label class="campo"><span>Loja</span>
         <select id="fLoja">
@@ -376,7 +375,9 @@ async function telaNovaVisita(){
   });
 
   const $tec = document.getElementById('fTec');
-  const $rede = document.getElementById('fRede');
+  const $redeBox = document.getElementById('fRede');
+  // botões (não lista suspensa): $rede.value devolve a rede marcada
+  const $rede = { get value(){ return $redeBox.querySelector('button[aria-pressed="true"]')?.dataset.rede || ''; } };
   const $loja = document.getElementById('fLoja'), $info = document.getElementById('lojaInfo');
   const $lista = document.getElementById('listaChecklists');
   let geo = null, geoOk = false;
@@ -401,10 +402,13 @@ async function telaNovaVisita(){
     $info.textContent = '';
   };
 
-  $rede.onchange = () => {
-    localStorage.setItem('ultimaRede', $rede.value);
-    atualizarLojasComFiltro();
-  };
+  $redeBox.querySelectorAll('button').forEach(b => {
+    b.onclick = () => {
+      $redeBox.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b ? 'true' : 'false'));
+      localStorage.setItem('ultimaRede', b.dataset.rede);
+      atualizarLojasComFiltro();
+    };
+  });
   atualizarLojasComFiltro(); // já abre filtrada pela última rede usada
 
   const bloquearChecklists = () => {
