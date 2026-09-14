@@ -844,6 +844,8 @@ async function telaRelatorio(){
       <div class="aviso nao-imprime">Para salvar em PDF: toque em <strong>Gerar PDF</strong> e escolha
       “Salvar como PDF” na tela de impressão do celular.</div>
       <div id="relatorio">
+      <table class="folha"><thead><tr><td class="topo"></td></tr></thead><tfoot><tr><td class="rodape"></td></tr></tfoot>
+      <tbody><tr><td class="miolo">
         <h3>RELATÓRIO DE INSPEÇÃO DE MANUTENÇÃO</h3>
         <div class="rsub">${esc(chk.titulo)} · Atendimento Equipe Gerador — Grupo DMA</div>
         <table>
@@ -868,6 +870,7 @@ async function telaRelatorio(){
           Emissão: ${visita.emitidoEm ? dataBR(visita.emitidoEm) + ', ' + horaBR(visita.emitidoEm) : '—'}<br>
           <strong>${esc(visita.tecnico)}</strong>
         </div>
+      </td></tr></tbody></table>
       </div>`,
     barra: `<button class="btn sec" id="bJson" style="flex:1">Exportar dados</button>
             <button class="btn" id="bPdf" style="flex:1.3">Gerar PDF</button>`
