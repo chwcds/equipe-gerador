@@ -329,7 +329,6 @@ async function telaNovaVisita(){
   const ultimoTec = localStorage.getItem('ultimoTecnico') || '';
   const ultimaRede = localStorage.getItem('ultimaRede') || 'Supermercados BH';
   const redes = ['Supermercados BH', 'DMA'];
-  const lojasOrdenadas = [...(CFG.lojas || [])].sort((a,b) => a.nome.localeCompare(b.nome, 'pt-BR'));
 
   montarTela({
     titulo: 'Nova visita', voltar: telaInicio,
@@ -351,10 +350,10 @@ async function telaNovaVisita(){
       </div>
 
       <label class="campo"><span>Loja</span>
+        <input type="text" id="fBuscaLoja" placeholder="Digite o código ou o nome da loja para buscar"
+          autocomplete="off" autocapitalize="characters" style="margin-bottom:8px">
         <select id="fLoja">
           <option value="">Selecione…</option>
-          ${lojasOrdenadas.map(l =>
-            `<option value="${esc(l.cod)}">${esc(l.cod)} — ${esc(l.nome)}</option>`).join('')}
         </select>
       </label>
       <div id="lojaInfo" class="s" style="font-size:12.5px;color:var(--cinza);margin:-8px 0 10px"></div>
@@ -413,26 +412,37 @@ async function telaNovaVisita(){
       el.textContent = `${c.itens.length} itens · ${comFoto} com foto`;
     });
   };
-  const atualizarLojasComFiltro = () => {
-    atualizarResumos();
+  const $busca = document.getElementById('fBuscaLoja');
+  const normalizar = t => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().trim();
+  const numCod = c => { const n = parseInt(String(c).replace(/\D/g, ''), 10); return isNaN(n) ? Infinity : n; };
+  // lista em ordem de código (D002, D003, ... / L001, L002, ...); a busca filtra por código ou nome
+  const montarListaLojas = (manterSelecao) => {
     const redeSelecionada = $rede.value;
-    let lojasFiltradas = [...(CFG.lojas || [])];
-    if (redeSelecionada) {
-      lojasFiltradas = lojasFiltradas.filter(l => l.rede === redeSelecionada);
-    }
-    lojasFiltradas.sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
-
-    // Limpar opções e reconstruir
-    $loja.innerHTML = '<option value="">Selecione…</option>';
-    lojasFiltradas.forEach(l => {
+    const termo = normalizar($busca.value);
+    const anterior = manterSelecao ? $loja.value : '';
+    let lista = (CFG.lojas || []).filter(l => !redeSelecionada || l.rede === redeSelecionada);
+    if (termo) lista = lista.filter(l => normalizar(l.cod).includes(termo) || normalizar(l.nome).includes(termo));
+    lista.sort((a, b) => (numCod(a.cod) - numCod(b.cod)) || String(a.cod).localeCompare(String(b.cod)));
+    $loja.innerHTML = `<option value="">${lista.length ? 'Selecione…' : 'Nenhuma loja encontrada'}</option>`;
+    lista.forEach(l => {
       const opt = document.createElement('option');
       opt.value = l.cod;
       opt.textContent = `${l.cod} — ${l.nome}`;
       $loja.appendChild(opt);
     });
-    $loja.value = '';
+    if (anterior && lista.some(l => l.cod === anterior)) $loja.value = anterior;
+    else if (termo && lista.length === 1) $loja.value = lista[0].cod;   // só uma loja bate: já seleciona
+    else $loja.value = '';
     $info.textContent = '';
+    const l = encontrarLoja($loja.value);
+    if (l) $info.textContent = l.endereco || 'Endereço não cadastrado.';
   };
+  const atualizarLojasComFiltro = () => {
+    atualizarResumos();
+    $busca.value = '';
+    montarListaLojas(false);
+  };
+  $busca.oninput = () => montarListaLojas(true);
 
   $redeBox.querySelectorAll('button').forEach(b => {
     b.onclick = () => {
@@ -496,9 +506,8 @@ async function telaNovaVisita(){
       return;
     }
     salvarLojaNova({cod, nome, endereco: end, rede: $rede.value, dadosTecnicos: {}});
-    const opt = document.createElement('option');
-    opt.value = cod; opt.textContent = `${cod} — ${nome}`;
-    $loja.appendChild(opt);
+    $busca.value = cod;
+    montarListaLojas(false);
     $loja.value = cod;
     preencherInfoLoja();
     limparPainelLoja();
