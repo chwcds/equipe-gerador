@@ -146,31 +146,151 @@ function itensDoChecklist(chk, v){
   return [...prefixo, ...chk.itens];
 }
 
-/* extras salvas neste aparelho: lojas novas cadastradas em campo e correções de dados técnicos */
-function aplicarExtrasLocais(){
-  try {
-    const extras = JSON.parse(localStorage.getItem('lojasExtras') || '[]');
-    for (const nova of extras) if (!encontrarLoja(nova.cod)) CFG.lojas.push(nova);
-  } catch (e) {}
-  try {
-    const overrides = JSON.parse(localStorage.getItem('dadosTecnicosExtras') || '{}');
-    for (const chave in overrides){
-      const [cod, bloco] = chave.split('|');
-      const l = encontrarLoja(cod);
-      if (!l) continue;
-      l.dadosTecnicos = l.dadosTecnicos || {};
-      l.dadosTecnicos[bloco] = Object.assign({}, l.dadosTecnicos[bloco] || {}, overrides[chave]);
-    }
-  } catch (e) {}
+/* ===================== base central (planilha Google via Apps Script) =====================
+   O cadastro técnico e as lojas novas cadastradas em campo são compartilhados entre
+   todos os aparelhos por uma planilha Google ("Equipe Gerador - Cadastro de Lojas",
+   conta chwcds). Ordem de precedência ao montar a loja em memória:
+     checklists.json  <  cópia local da base central  <  envios ainda pendentes deste aparelho.
+   Tudo funciona offline: o que o técnico preenche entra numa fila e é enviado quando
+   houver internet; a última cópia baixada da base central fica guardada no aparelho. */
+const BASE_CENTRAL_URL = 'https://script.google.com/macros/s/AKfycbyMbRFI4qbTCtICWeC4xZdtVly9SIvNnlmoZ5pcbMpKSbuQdhAgQP0WldnXxFry89g2/exec';
+const lerLS = (k, padrao) => { try { return JSON.parse(localStorage.getItem(k)) ?? padrao; } catch (e) { return padrao; } };
+const gravarLS = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
+const central = { cache: null, ultimaSync: null, enviando: false, erro: null };
+
+function aplicarDadosTecnicos(chave, dados){
+  const [cod, bloco] = chave.split('|');
+  const l = encontrarLoja(cod);
+  if (!l || !dados) return;
+  l.dadosTecnicos = l.dadosTecnicos || {};
+  l.dadosTecnicos[bloco] = Object.assign({}, l.dadosTecnicos[bloco] || {}, dados);
 }
+function aplicarLojaNova(nova){
+  if (!nova || !nova.cod) return;
+  if (!encontrarLoja(nova.cod)) CFG.lojas.push(Object.assign({dadosTecnicos: {}}, nova));
+}
+/* recompõe CFG.lojas a partir do checklists.json puro + base central + fila pendente */
+function aplicarExtrasLocais(){
+  if (CFG._lojasBase) CFG.lojas = JSON.parse(CFG._lojasBase);
+  else CFG._lojasBase = JSON.stringify(CFG.lojas);
+  migrarExtrasAntigos();
+  central.cache = lerLS('baseCentralCache', null);
+  if (central.cache){
+    (central.cache.lojasNovas || []).forEach(aplicarLojaNova);
+    for (const chave in (central.cache.dadosTecnicos || {})) aplicarDadosTecnicos(chave, central.cache.dadosTecnicos[chave]);
+    central.ultimaSync = central.cache.baixadoEm || null;
+  }
+  for (const it of lerLS('filaCentral', [])){
+    if (it.tipo === 'lojaNova') aplicarLojaNova({cod: it.cod, nome: it.nome, endereco: it.endereco, rede: it.rede});
+    if (it.tipo === 'dadosTecnicos') aplicarDadosTecnicos(`${it.cod}|${it.bloco}`, it.dados);
+  }
+}
+/* versões anteriores guardavam tudo só neste aparelho (lojasExtras / dadosTecnicosExtras):
+   na primeira abertura da versão nova, esse acervo entra na fila para ir à base central */
+function migrarExtrasAntigos(){
+  if (localStorage.getItem('extrasMigrados')) return;
+  const fila = lerLS('filaCentral', []);
+  for (const nova of lerLS('lojasExtras', [])){
+    if (nova && nova.cod) fila.push({tipo:'lojaNova', cod:nova.cod, nome:nova.nome||'', endereco:nova.endereco||'', rede:nova.rede||'', tecnico:'', criadoEm:new Date().toISOString()});
+  }
+  const overrides = lerLS('dadosTecnicosExtras', {});
+  for (const chave in overrides){
+    const [cod, bloco] = chave.split('|');
+    fila.push({tipo:'dadosTecnicos', cod, bloco, dados: overrides[chave], tecnico:'', criadoEm:new Date().toISOString()});
+  }
+  gravarLS('filaCentral', fila);
+  localStorage.setItem('extrasMigrados', '1');
+}
+/* entra na fila (substituindo item igual) e tenta enviar */
+function enfileirarCentral(item){
+  const fila = lerLS('filaCentral', []);
+  const chave = it => `${it.tipo}|${it.cod}|${it.bloco || ''}`;
+  const i = fila.findIndex(it => chave(it) === chave(item));
+  if (i >= 0) fila[i] = item; else fila.push(item);
+  gravarLS('filaCentral', fila);
+  atualizarStatusCentral();
+  clearTimeout(enfileirarCentral._t);
+  enfileirarCentral._t = setTimeout(enviarFilaCentral, 1500);
+}
+async function enviarFilaCentral(){
+  const fila = lerLS('filaCentral', []);
+  if (!fila.length || central.enviando || !navigator.onLine) return;
+  central.enviando = true; central.erro = null; atualizarStatusCentral();
+  try {
+    const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 30000);
+    const r = await fetch(BASE_CENTRAL_URL, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({lote: fila}), signal: ctl.signal});
+    clearTimeout(t);
+    const j = await r.json();
+    if (!j.ok) throw new Error(j.erro || 'resposta inválida');
+    // enviados: saem da fila e passam a valer pela cópia local da base central
+    const restante = lerLS('filaCentral', []).filter(it => !fila.some(f => f.tipo === it.tipo && f.cod === it.cod && (f.bloco||'') === (it.bloco||'') && f.criadoEm === it.criadoEm));
+    gravarLS('filaCentral', restante);
+    const cache = central.cache || {dadosTecnicos:{}, lojasNovas:[]};
+    for (const it of fila){
+      if (it.tipo === 'dadosTecnicos'){
+        const k = `${it.cod}|${it.bloco}`;
+        cache.dadosTecnicos[k] = Object.assign({}, cache.dadosTecnicos[k] || {}, it.dados);
+      } else if (it.tipo === 'lojaNova' && !cache.lojasNovas.some(l => l.cod === it.cod)){
+        cache.lojasNovas.push({cod:it.cod, nome:it.nome, endereco:it.endereco, rede:it.rede});
+      }
+    }
+    central.cache = cache; gravarLS('baseCentralCache', cache);
+    localStorage.removeItem('lojasExtras'); localStorage.removeItem('dadosTecnicosExtras');
+  } catch (e) {
+    central.erro = 'sem conexão com a base central';
+  } finally {
+    central.enviando = false; atualizarStatusCentral();
+  }
+}
+/* baixa a base central inteira (ao abrir o app e ao voltar a rede) */
+async function baixarBaseCentral(){
+  if (!navigator.onLine) return false;
+  try {
+    const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 30000);
+    const r = await fetch(BASE_CENTRAL_URL + '?t=' + Date.now(), {cache:'no-store', signal: ctl.signal});
+    clearTimeout(t);
+    const j = await r.json();
+    if (!j.ok) throw new Error(j.erro || 'resposta inválida');
+    central.cache = {dadosTecnicos: j.dadosTecnicos || {}, lojasNovas: j.lojasNovas || [], baixadoEm: new Date().toISOString()};
+    gravarLS('baseCentralCache', central.cache);
+    central.erro = null;
+    aplicarExtrasLocais();
+    return true;
+  } catch (e) {
+    central.erro = 'sem conexão com a base central';
+    return false;
+  } finally {
+    atualizarStatusCentral();
+  }
+}
+async function sincronizarCentral(){
+  await enviarFilaCentral();
+  const ok = await baixarBaseCentral();
+  if (ok && !visita && typeof telaInicio === 'function' && document.getElementById('bNova')) telaInicio();
+}
+function textoStatusCentral(){
+  const pend = lerLS('filaCentral', []).length;
+  if (central.enviando) return 'Enviando cadastro para a base central…';
+  const partes = [];
+  if (central.ultimaSync) partes.push(`Base de lojas atualizada em ${dataBR(central.ultimaSync)} ${horaBR(central.ultimaSync).slice(0,5)}`);
+  else partes.push('Base de lojas ainda não baixada');
+  if (pend) partes.push(`${pend} cadastro${pend>1?'s':''} aguardando envio`);
+  if (central.erro) partes.push(central.erro);
+  return partes.join(' · ');
+}
+function atualizarStatusCentral(){
+  const el = document.getElementById('statusCentral');
+  if (el) el.textContent = textoStatusCentral();
+}
+
 function salvarLojaNova(loja){
-  CFG.lojas.push(loja);
-  const lista = JSON.parse(localStorage.getItem('lojasExtras') || '[]');
-  lista.push(loja);
-  localStorage.setItem('lojasExtras', JSON.stringify(lista));
+  aplicarLojaNova(loja);
+  enfileirarCentral({tipo:'lojaNova', cod:loja.cod, nome:loja.nome||'', endereco:loja.endereco||'', rede:loja.rede||'',
+    tecnico: localStorage.getItem('ultimoTecnico') || '', criadoEm:new Date().toISOString()});
 }
 /* quando todos os campos técnicos do bloco foram respondidos nesta visita, grava no
-   cadastro da loja (neste aparelho) para não perguntar de novo nas próximas visitas */
+   cadastro da loja e manda para a base central, para os outros aparelhos não perguntarem de novo */
 function salvarDadosTecnicosSeCompleto(chk, v){
   const campos = camposTecnicosDoBloco(chk.bloco);
   if (!campos.length || v._dtBloqueado) return;
@@ -179,12 +299,10 @@ function salvarDadosTecnicosSeCompleto(chk, v){
   if (!l) return;
   const valores = {};
   campos.forEach(c => { valores[c.id] = v.respostas[c.id]; });
-  l.dadosTecnicos = l.dadosTecnicos || {};
-  l.dadosTecnicos[chk.bloco] = Object.assign({}, l.dadosTecnicos[chk.bloco] || {}, valores);
-  const chave = `${v.loja.cod}|${chk.bloco}`;
-  const overrides = JSON.parse(localStorage.getItem('dadosTecnicosExtras') || '{}');
-  overrides[chave] = l.dadosTecnicos[chk.bloco];
-  localStorage.setItem('dadosTecnicosExtras', JSON.stringify(overrides));
+  const atual = (l.dadosTecnicos && l.dadosTecnicos[chk.bloco]) || {};
+  if (campos.every(c => atual[c.id] === valores[c.id])) return; // nada mudou
+  aplicarDadosTecnicos(`${v.loja.cod}|${chk.bloco}`, valores);
+  enfileirarCentral({tipo:'dadosTecnicos', cod:v.loja.cod, bloco:chk.bloco, dados:valores, tecnico:v.tecnico||'', criadoEm:new Date().toISOString()});
 }
 
 /* item pendente = visível, sem resposta, ou com foto exigida faltando */
@@ -291,7 +409,8 @@ async function telaInicio(){
          Toque em <strong>Nova visita</strong> para começar.</div>`
       : '') +
       (rasc.length ? `<h2>Em andamento</h2>${rasc.map(linha).join('')}` : '') +
-      (fim.length  ? `<h2>Finalizadas</h2>${fim.map(linha).join('')}` : ''),
+      (fim.length  ? `<h2>Finalizadas</h2>${fim.map(linha).join('')}` : '') +
+      `<div class="status-central" id="statusCentral">${esc(textoStatusCentral())}</div>`,
     barra: `<button class="btn" id="bNova">+ Nova visita</button>`
   });
   document.getElementById('bNova').onclick = telaNovaVisita;
@@ -922,7 +1041,7 @@ function estadoRede(){
   el.textContent = navigator.onLine ? 'online' : 'offline';
   el.classList.toggle('off', !navigator.onLine);
 }
-addEventListener('online', estadoRede);
+addEventListener('online', () => { estadoRede(); if (CFG) sincronizarCentral(); });
 addEventListener('offline', estadoRede);
 
 (async function iniciar(){
@@ -940,6 +1059,7 @@ addEventListener('offline', estadoRede);
     return;
   }
   aplicarExtrasLocais();
-  telaInicio();
+  await telaInicio();
+  sincronizarCentral();   // em segundo plano: envia o que estiver pendente e baixa a base central
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
 })();
