@@ -43,7 +43,7 @@ const BD = (() => {
 /* ===================== versão =====================
    Mostrada na tela inicial para conferir se o aparelho está com a versão publicada.
    A cada publicação: trocar aqui e no CACHE do sw.js. */
-const VERSAO_APP = '26';
+const VERSAO_APP = '27';
 const DATA_VERSAO = '20/09/2026';
 
 /* ===================== estado ===================== */
@@ -365,6 +365,43 @@ const localTexto = g => !g ? '—'
   : g.erro ? g.erro
   : `Lat: ${g.lat}, Long: ${g.lon} (Precisão: ${g.precisao}m)`;
 
+/* ===================== dados da loja (modal) ===================== */
+const TEL_CEMIG = '08007232827';
+const formatarCNPJ = v => {
+  const d = String(v || '').replace(/\D/g, '');
+  return d.length === 14 ? `${d.slice(0,2)}.${d.slice(2,5)}.${d.slice(5,8)}/${d.slice(8,12)}-${d.slice(12)}` : (v || '');
+};
+function fecharDadosLoja(){
+  document.getElementById('modalLoja')?.remove();
+}
+function abrirDadosLoja(loja){
+  fecharDadosLoja();
+  const linha = (rotulo, valor) => valor ? `
+    <div class="dado-linha"><span>${esc(rotulo)}</span><b>${esc(valor)}</b></div>` : '';
+  const mapaUrl = loja.endereco ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(loja.endereco)}` : '';
+  const div = document.createElement('div');
+  div.id = 'modalLoja';
+  div.className = 'modal-fundo';
+  div.innerHTML = `
+    <div class="modal-caixa">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:700;font-size:16px">${esc(loja.cod)} — ${esc(loja.nome)}</div>
+        </div>
+        <button type="button" class="btn-voltar" id="bFecharDadosLoja" style="background:var(--fundo);color:var(--texto)">✕</button>
+      </div>
+      ${linha('Endereço', loja.endereco || 'Endereço não cadastrado.')}
+      ${mapaUrl ? `<a class="btn sec pq" href="${mapaUrl}" target="_blank" rel="noopener" style="margin:2px 0 12px">🗺️ Abrir no mapa</a>` : ''}
+      ${linha('Regional', loja.regional)}
+      ${linha('CNPJ', formatarCNPJ(loja.cnpj))}
+      ${linha('Unidade consumidora', loja.unidade_consumidora)}
+      ${loja.uf === 'MG' ? `<a class="btn pq" href="tel:${TEL_CEMIG}" style="margin-top:6px">📞 Ligar para a Cemig</a>` : ''}
+    </div>`;
+  document.body.appendChild(div);
+  div.addEventListener('click', e => { if (e.target === div) fecharDadosLoja(); });
+  document.getElementById('bFecharDadosLoja').onclick = fecharDadosLoja;
+}
+
 /* ===================== fotos ===================== */
 async function comprimir(file){
   const bmp = await createImageBitmap(file).catch(() => null);
@@ -543,7 +580,8 @@ async function telaInicio(){
           <option value="">Selecione…</option>
         </select>
       </label>
-      <div id="lojaInfo" class="s" style="font-size:12.5px;color:var(--cinza);margin:-8px 0 10px"></div>
+      <div id="lojaInfo" class="s" style="font-size:12.5px;color:var(--cinza);margin:-8px 0 6px"></div>
+      <button type="button" class="btn sec pq oculto" id="bDadosLoja" style="margin-bottom:10px">📍 Ver dados da loja</button>
 
       <label class="campo" style="margin-top:14px"><span>Matrícula do gerente que acompanhou</span>
         <input type="number" id="fMat" inputmode="numeric" placeholder="Ex.: 653335"></label>
@@ -576,8 +614,16 @@ async function telaInicio(){
   // botões (não lista suspensa): $rede.value devolve a rede marcada
   const $rede = { get value(){ return $redeBox.querySelector('button[aria-pressed="true"]')?.dataset.rede || ''; } };
   const $loja = document.getElementById('fLoja'), $info = document.getElementById('lojaInfo');
+  const $bDadosLoja = document.getElementById('bDadosLoja');
   const $lista = document.getElementById('listaChecklists');
   let geo = null, geoOk = false;
+
+  const atualizarInfoLoja = () => {
+    const l = encontrarLoja($loja.value);
+    $info.textContent = l ? (l.endereco || 'Endereço não cadastrado.') : '';
+    $bDadosLoja.classList.toggle('oculto', !l);
+    $bDadosLoja.onclick = l ? () => abrirDadosLoja(l) : null;
+  };
 
   const atualizarResumos = () => {
     const dispensa = fotosDispensadas($rede.value);
@@ -609,9 +655,7 @@ async function telaInicio(){
     if (anterior && lista.some(l => l.cod === anterior)) $loja.value = anterior;
     else if (termo && lista.length === 1) $loja.value = lista[0].cod;   // só uma loja bate: já seleciona
     else $loja.value = '';
-    $info.textContent = '';
-    const l = encontrarLoja($loja.value);
-    if (l) $info.textContent = l.endereco || 'Endereço não cadastrado.';
+    atualizarInfoLoja();
   };
   const atualizarLojasComFiltro = () => {
     atualizarResumos();
@@ -648,11 +692,7 @@ async function telaInicio(){
   buscarGeo();
   $bGeo.onclick = buscarGeo;
 
-  const preencherInfoLoja = () => {
-    const l = encontrarLoja($loja.value);
-    $info.textContent = l ? (l.endereco || 'Endereço não cadastrado.') : '';
-  };
-  $loja.onchange = preencherInfoLoja;
+  $loja.onchange = atualizarInfoLoja;
 
   $lista.querySelectorAll('[data-chk]').forEach(el => {
     el.onclick = async () => {
