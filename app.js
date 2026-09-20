@@ -43,8 +43,8 @@ const BD = (() => {
 /* ===================== versão =====================
    Mostrada na tela inicial para conferir se o aparelho está com a versão publicada.
    A cada publicação: trocar aqui e no CACHE do sw.js. */
-const VERSAO_APP = '22';
-const DATA_VERSAO = '21/09/2026';
+const VERSAO_APP = '23';
+const DATA_VERSAO = '20/09/2026';
 
 /* ===================== estado ===================== */
 let CFG = null;            // checklists.json
@@ -291,6 +291,45 @@ function salvarDadosTecnicosSeCompleto(chk, v){
   if (campos.every(c => atual[c.id] === valores[c.id])) return; // nada mudou
   aplicarDadosTecnicos(`${v.loja.cod}|${chk.bloco}`, valores);
   enfileirarCentral({tipo:'dadosTecnicos', cod:v.loja.cod, bloco:chk.bloco, dados:valores, tecnico:v.tecnico||'', criadoEm:new Date().toISOString()});
+}
+
+/* ao finalizar um relatório, manda todas as perguntas e respostas para a planilha central
+   (abas "relatorios" e "relatorios_base"), na mesma fila offline dos dados técnicos —
+   se não houver internet no momento, envia sozinho quando a rede voltar. Fotos não vão
+   junto (só a quantidade); o relatório com as fotos continua disponível pelo PDF. */
+function enviarRelatorioCentral(v){
+  const chk = CFG.checklists.find(c => c.id === v.checklist);
+  if (!chk) return;
+  const visiveis = itensDoChecklist(chk, v).filter(it => visivel(it, v.respostas));
+  const cont = {Conforme:0, 'Não conforme':0, 'Não se aplica':0, Informativo:0, Pendente:0};
+  for (const it of visiveis) cont[situacao(it, v.respostas[it.id])]++;
+  const nFotos = Object.values(v.fotos).reduce((a,b) => a + b.length, 0);
+  const dados = {
+    relatorio_id: v.id,
+    checklist: {id: chk.id, titulo: chk.titulo, bloco: chk.bloco},
+    tecnico: v.tecnico,
+    loja: v.loja,
+    matricula: v.matricula || '',
+    data: dataBR(v.criadoEm), hora: horaBR(v.criadoEm),
+    emissao: v.emitidoEm || null,
+    geo: v.geo || null,
+    totais: {
+      avaliado: visiveis.length,
+      conforme: cont.Conforme + cont.Informativo,
+      naoConforme: cont['Não conforme'],
+      naoAplicavel: cont['Não se aplica'],
+      fotos: nFotos
+    },
+    itens: visiveis.map(it => ({
+      secao: it.secao, pergunta: it.pergunta,
+      resposta: v.respostas[it.id] ?? null,
+      situacao: situacao(it, v.respostas[it.id]),
+      prioridade: it.prioridade || null,
+      observacao: v.obs[it.id] || null,
+      qtd_fotos: (v.fotos[it.id] || []).length
+    }))
+  };
+  enfileirarCentral({tipo:'relatorio', cod: v.id, dados, tecnico: v.tecnico || '', criadoEm: new Date().toISOString()});
 }
 
 /* item pendente = visível, sem resposta, ou com foto exigida faltando */
@@ -918,6 +957,7 @@ function telaRevisao(){
     visita.emitidoEm = new Date().toISOString();
     if (!visita.geo || visita.geo.erro){ const g = await pegarLocal(); if (!g.erro) visita.geo = g; }
     await BD.salvarVisita(visita);
+    enviarRelatorioCentral(visita);
     telaRelatorio();
   };
 }
