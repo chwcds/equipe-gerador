@@ -43,7 +43,7 @@ const BD = (() => {
 /* ===================== versão =====================
    Mostrada na tela inicial para conferir se o aparelho está com a versão publicada.
    A cada publicação: trocar aqui e no CACHE do sw.js. */
-const VERSAO_APP = '25';
+const VERSAO_APP = '26';
 const DATA_VERSAO = '20/09/2026';
 
 /* ===================== estado ===================== */
@@ -1000,8 +1000,8 @@ async function telaRelatorio(){
   montarTela({
     titulo: 'Relatório', sub: `${visita.loja.cod} · ${dataBR(visita.criadoEm)}`, voltar: telaRelatorios,
     html: `
-      <div class="aviso nao-imprime">Para salvar em PDF: toque em <strong>Gerar PDF</strong> e escolha
-      “Salvar como PDF” na tela de impressão do celular.</div>
+      <div class="aviso nao-imprime">Toque em <strong>Gerar relatório</strong>: os dados são exportados e, em
+      seguida, escolha “Salvar como PDF” na tela de impressão do celular.</div>
       <div id="relatorio">
       <table class="folha"><thead><tr><td class="topo"></td></tr></thead><tfoot><tr><td class="rodape"></td></tr></tfoot>
       <tbody><tr><td class="miolo">
@@ -1031,15 +1031,17 @@ async function telaRelatorio(){
         </div>
       </td></tr></tbody></table>
       </div>`,
-    barra: `<button class="btn sec" id="bJson" style="flex:1">Exportar dados</button>
-            <button class="btn" id="bPdf" style="flex:1.3">Gerar PDF</button>`
+    barra: `<button class="btn" id="bGerar" style="flex:1">Gerar relatório</button>`
   });
 
   // o título da página vira o nome sugerido do PDF em "Salvar como PDF"
   const nomeArq = nomeArquivoRelatorio(visita);
   document.title = nomeArq;
-  document.getElementById('bPdf').onclick = () => { document.title = nomeArq; window.print(); };
-  document.getElementById('bJson').onclick = () => exportarJSON(chk, visiveis, nomeArq);
+  document.getElementById('bGerar').onclick = () => {
+    exportarJSON(chk, visiveis, nomeArq);
+    document.title = nomeArq;
+    window.print();
+  };
 }
 
 function exportarJSON(chk, visiveis, nomeArq){
