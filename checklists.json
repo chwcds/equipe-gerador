@@ -1,26 +1,11 @@
 {
- "versao": "2026-09-20 18:00",
+ "versao": "2026-09-20 18:30",
  "checklists": [
   {
    "id": "rotina",
    "titulo": "Inspeção de Rotina — Gerador",
    "bloco": "Gerador",
    "itens": [
-    {
-     "id": "rg_tipo_funcionamento",
-     "n": "0.5",
-     "secao": "Dados Técnicos",
-     "pergunta": "Tipo de funcionamento (Parcial ou Total)",
-     "tipo": "opcoes",
-     "opcoes": [
-      "Parcial",
-      "Total"
-     ],
-     "foto": null,
-     "obs": false,
-     "prioridade": "Alta",
-     "cond": null
-    },
     {
      "id": "rg_qta_composicao",
      "n": "1",
@@ -227,21 +212,6 @@
    "titulo": "Preventiva do Gerador",
    "bloco": "Gerador",
    "itens": [
-    {
-     "id": "rg_tipo_funcionamento",
-     "n": "0.5",
-     "secao": "Dados Técnicos",
-     "pergunta": "Tipo de funcionamento (Parcial ou Total)",
-     "tipo": "opcoes",
-     "opcoes": [
-      "Parcial",
-      "Total"
-     ],
-     "foto": null,
-     "obs": false,
-     "prioridade": "Alta",
-     "cond": null
-    },
     {
      "id": "rg_qta_composicao",
      "n": "1",
