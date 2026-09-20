@@ -43,7 +43,7 @@ const BD = (() => {
 /* ===================== versão =====================
    Mostrada na tela inicial para conferir se o aparelho está com a versão publicada.
    A cada publicação: trocar aqui e no CACHE do sw.js. */
-const VERSAO_APP = '27';
+const VERSAO_APP = '28';
 const DATA_VERSAO = '20/09/2026';
 
 /* ===================== estado ===================== */
@@ -115,8 +115,9 @@ const visivel = (item, respostas) => {
 /* precisa de foto? */
 function exigeFoto(item, resp){
   if (item._bloqueado) return false; // dado técnico já cadastrado da loja: não pede foto de novo
-  if (!item.foto) return false;
-  if (fotosDispensadas(redeDaVisita())) return false;   // lojas da DMA: foto nunca é obrigatória
+  if (item.tipo !== 'foto' && !item.foto) return false;
+  if (fotosDispensadas(redeDaVisita())) return false;   // lojas da DMA: foto nunca é obrigatória (inclui itens tipo "foto")
+  if (item.tipo === 'foto') return true;
   if (item.foto.sempre) return true;
   if (item.foto.quando) return resp != null &&
     String(resp).trim().toLowerCase() === String(item.foto.quando).trim().toLowerCase();
@@ -342,7 +343,7 @@ function pendencias(chk, v){
     const r = v.respostas[it.id];
     const semResposta = (it.tipo === 'foto') ? false : respostaVazia(it, r);
     const fotos = (v.fotos[it.id] || []);
-    const semFoto = (it.tipo === 'foto' ? true : exigeFoto(it, r)) && fotos.length === 0;
+    const semFoto = exigeFoto(it, r) && fotos.length === 0;
     if (semResposta || semFoto) faltando.push({item: it, semResposta, semFoto});
   }
   return faltando;
@@ -859,7 +860,7 @@ async function desenharFotos(it){
   const cx = $tela.querySelector(`[data-fotos="${CSS.escape(it.id)}"]`);
   if (!cx) return;
   const ids = visita.fotos[it.id] || [];
-  const precisa = (it.tipo === 'foto') || exigeFoto(it, visita.respostas[it.id]);
+  const precisa = exigeFoto(it, visita.respostas[it.id]);
   const urls = await Promise.all(ids.map(urlFoto));
   cx.innerHTML = ids.map((fid,i) =>
       `<div class="miniatura"><img src="${urls[i]}" alt=""><button data-rm="${fid}" data-de="${esc(it.id)}"
@@ -903,7 +904,7 @@ function pintarItem(it){
   const r = visita.respostas[it.id];
   const sit = situacao(it, r);
   const temFoto = (visita.fotos[it.id] || []).length > 0;
-  const faltaFoto = ((it.tipo === 'foto') || exigeFoto(it, r)) && !temFoto;
+  const faltaFoto = exigeFoto(it, r) && !temFoto;
   const respondido = it.tipo === 'foto' ? temFoto : !respostaVazia(it, r);
   el.classList.toggle('nao-conforme', sit === 'Não conforme');
   el.classList.toggle('respondido', respondido && !faltaFoto && sit !== 'Não conforme');
