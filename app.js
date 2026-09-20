@@ -43,7 +43,7 @@ const BD = (() => {
 /* ===================== versão =====================
    Mostrada na tela inicial para conferir se o aparelho está com a versão publicada.
    A cada publicação: trocar aqui e no CACHE do sw.js. */
-const VERSAO_APP = '21';
+const VERSAO_APP = '22';
 const DATA_VERSAO = '21/09/2026';
 
 /* ===================== estado ===================== */
@@ -712,8 +712,10 @@ function htmlItem(it){
         aria-pressed="${marcado}">${esc(o)}</button>`;
     }).join('')}</div>`;
     if (temOutro(it)){
-      entrada += `<input type="text" data-outro="${esc(it.id)}" class="${ehOutro(it, r) ? '' : 'oculto'}"
-        style="margin-top:9px" placeholder="Qual? Digite o nome" value="${esc(r === 'Outro' ? '' : (ehOutro(it, r) ? r : ''))}">`;
+      // opções numéricas (ex.: potência em kVA): o "Outro" abre o teclado numérico
+      const numerico = it.opcoes.filter(o => o !== 'Outro').every(o => /^\d+([.,]\d+)?$/.test(o));
+      entrada += `<input type="text" ${numerico ? 'inputmode="decimal"' : ''} data-outro="${esc(it.id)}" class="${ehOutro(it, r) ? '' : 'oculto'}"
+        style="margin-top:9px" placeholder="${numerico ? 'Qual? Digite o valor' : 'Qual? Digite o nome'}" value="${esc(r === 'Outro' ? '' : (ehOutro(it, r) ? r : ''))}">`;
     }
   } else if (it.tipo === 'numero'){
     entrada = `<input type="text" inputmode="decimal" data-in="${esc(it.id)}"
