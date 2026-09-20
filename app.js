@@ -43,7 +43,7 @@ const BD = (() => {
 /* ===================== versão =====================
    Mostrada na tela inicial para conferir se o aparelho está com a versão publicada.
    A cada publicação: trocar aqui e no CACHE do sw.js. */
-const VERSAO_APP = '23';
+const VERSAO_APP = '24';
 const DATA_VERSAO = '20/09/2026';
 
 /* ===================== estado ===================== */
@@ -294,9 +294,11 @@ function salvarDadosTecnicosSeCompleto(chk, v){
 }
 
 /* ao finalizar um relatório, manda todas as perguntas e respostas para a planilha central
-   (abas "relatorios" e "relatorios_base"), na mesma fila offline dos dados técnicos —
-   se não houver internet no momento, envia sozinho quando a rede voltar. Fotos não vão
-   junto (só a quantidade); o relatório com as fotos continua disponível pelo PDF. */
+   (aba "relatorios" com o resumo, e a aba do checklist específico — relatorios_rotina,
+   relatorios_preventiva, relatorios_subestacao ou relatorios_capacitores — com uma coluna
+   fixa por pergunta), na mesma fila offline dos dados técnicos — se não houver internet no
+   momento, envia sozinho quando a rede voltar. Fotos não vão junto (só a quantidade); o
+   relatório com as fotos continua disponível pelo PDF. */
 function enviarRelatorioCentral(v){
   const chk = CFG.checklists.find(c => c.id === v.checklist);
   if (!chk) return;
@@ -321,7 +323,7 @@ function enviarRelatorioCentral(v){
       fotos: nFotos
     },
     itens: visiveis.map(it => ({
-      secao: it.secao, pergunta: it.pergunta,
+      id: it.id, secao: it.secao, pergunta: it.pergunta,
       resposta: v.respostas[it.id] ?? null,
       situacao: situacao(it, v.respostas[it.id]),
       prioridade: it.prioridade || null,
