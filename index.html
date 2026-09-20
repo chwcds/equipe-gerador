@@ -58,7 +58,7 @@ textarea{min-height:76px;resize:vertical}
 
 /* ---------- botões ---------- */
 .btn{display:block;width:100%;padding:14px;border:0;border-radius:10px;background:var(--verde);
-  color:#fff;font-weight:600;cursor:pointer;text-align:center}
+  color:#fff;font-weight:600;cursor:pointer;text-align:center;text-decoration:none}
 .btn:active{background:var(--verde-esc)}
 .btn[disabled]{background:#A8B3BD;cursor:not-allowed}
 .btn.sec{background:#fff;color:var(--verde);border:1.5px solid var(--verde)}
@@ -133,6 +133,15 @@ textarea{min-height:76px;resize:vertical}
   border-radius:9px;font-size:13.5px;margin-bottom:12px}
 .aviso.erro{background:var(--vermelho-cl);border-color:#F3C0BA;color:#8C2A1E}
 .linha-lista.desabilitada{opacity:.42;filter:grayscale(.3)}
+
+/* ---------- modal de dados da loja ---------- */
+.modal-fundo{position:fixed;inset:0;z-index:40;background:rgba(17,20,23,.5);
+  display:flex;align-items:flex-end;justify-content:center}
+.modal-caixa{background:var(--papel);border-radius:16px 16px 0 0;padding:18px 16px calc(18px + var(--safe-b));
+  width:100%;max-width:760px;max-height:82vh;overflow:auto;box-shadow:0 -2px 18px rgba(0,0,0,.18)}
+.dado-linha{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--linha)}
+.dado-linha span{color:var(--cinza);font-size:13.5px}
+.dado-linha b{font-size:14px;font-weight:600;text-align:right}
 
 /* ---------- dados técnicos já cadastrados da loja ---------- */
 .item.bloqueado{border-left-color:var(--verde);background:var(--verde-cl)}
