@@ -43,7 +43,7 @@ const BD = (() => {
 /* ===================== versão =====================
    Mostrada na tela inicial para conferir se o aparelho está com a versão publicada.
    A cada publicação: trocar aqui e no CACHE do sw.js. */
-const VERSAO_APP = '16';
+const VERSAO_APP = '17';
 const DATA_VERSAO = '20/09/2026';
 
 /* ===================== estado ===================== */
@@ -402,15 +402,19 @@ function ligarListaVisitas(recarregar){
       e.stopPropagation();
       const id = btn.dataset.excluir;
       if (!confirm('Excluir esta visita em andamento? As respostas e fotos dela serão apagadas e isso não pode ser desfeito.')) return;
-      const v = await BD.lerVisita(id);
-      if (v){
-        const idsFoto = Object.values(v.fotos || {}).flat();
-        for (const fid of idsFoto) await BD.apagarFoto(fid);
-      }
-      await BD.apagarVisita(id);
+      await apagarVisitaCompleta(id);
       recarregar();
     };
   });
+}
+/* apaga a visita e todas as fotos dela do banco do aparelho */
+async function apagarVisitaCompleta(id){
+  const v = await BD.lerVisita(id);
+  if (v){
+    const idsFoto = Object.values(v.fotos || {}).flat();
+    for (const fid of idsFoto) await BD.apagarFoto(fid);
+  }
+  await BD.apagarVisita(id);
 }
 async function telaEmAndamento(){
   visita = null;
@@ -655,11 +659,19 @@ function telaChecklist(){
     sub: `${visita.loja.cod} — ${visita.loja.nome || 's/ nome'} · ${visita.tecnico.split(' ')[0]}`,
     voltar: async () => { await BD.salvarVisita(visita); telaInicio(); },   // sair guarda a visita em "Em andamento"
     html: `<div class="progresso"><i id="pbar"></i></div><div class="prog-txt" id="ptxt"></div>${html}`,
-    barra: `<button class="btn" id="bRevisar" style="flex:1">Revisar e finalizar</button>`
+    barra: `<button class="btn perigo" id="bCancelar" style="flex:1">Cancelar relatório</button>
+            <button class="btn" id="bRevisar" style="flex:1.4">Revisar e finalizar</button>`
   });
   ligarItens(chk, itens);
   atualizarProgresso(chk);
   document.getElementById('bRevisar').onclick = async () => { await BD.salvarVisita(visita); telaRevisao(); };
+  // desistir do relatório: apaga a visita e as fotos dela deste aparelho (não vai para "Em andamento")
+  document.getElementById('bCancelar').onclick = async () => {
+    if (!confirm('Cancelar este relatório? Tudo que foi respondido e fotografado nesta visita será apagado. Isso não pode ser desfeito.')) return;
+    await apagarVisitaCompleta(visita.id);
+    visita = null;
+    telaInicio();
+  };
   const bCorr = document.getElementById('bCorrigirDT');
   if (bCorr) bCorr.onclick = async () => { visita._dtBloqueado = false; await BD.salvarVisita(visita); telaChecklist(); };
 }
