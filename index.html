@@ -97,6 +97,15 @@ textarea{min-height:76px;resize:vertical}
 .opcoes button.ruim[aria-pressed=true]{background:var(--vermelho);border-color:var(--vermelho)}
 .opcoes button.na[aria-pressed=true]{background:var(--cinza);border-color:var(--cinza)}
 
+/* ---------- teclado numérico simplificado (medições em campo) ---------- */
+input.visor-num{font-size:21px;font-weight:700;text-align:center;letter-spacing:.02em;
+  background:#FAFBFC;caret-color:transparent;cursor:default}
+.teclado-num{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:9px}
+.teclado-num button{padding:15px 0;border:1.5px solid #CBD2D9;background:#fff;border-radius:9px;
+  cursor:pointer;font-size:19px;font-weight:600;color:var(--texto)}
+.teclado-num button:active{background:var(--verde-cl);border-color:var(--verde)}
+.teclado-num button[data-tecla="del"]{color:var(--vermelho)}
+
 /* ---------- fotos ---------- */
 .fotos{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 .miniatura{position:relative;width:74px;height:74px;border-radius:9px;overflow:hidden;border:1px solid var(--linha)}
