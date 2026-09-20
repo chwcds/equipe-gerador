@@ -40,6 +40,12 @@ const BD = (() => {
   };
 })();
 
+/* ===================== versão =====================
+   Mostrada na tela inicial para conferir se o aparelho está com a versão publicada.
+   A cada publicação: trocar aqui e no CACHE do sw.js. */
+const VERSAO_APP = '16';
+const DATA_VERSAO = '20/09/2026';
+
 /* ===================== estado ===================== */
 let CFG = null;            // checklists.json
 let visita = null;         // visita em edição
@@ -165,34 +171,27 @@ function aplicarDadosTecnicos(chave, dados){
   l.dadosTecnicos = l.dadosTecnicos || {};
   l.dadosTecnicos[bloco] = Object.assign({}, l.dadosTecnicos[bloco] || {}, dados);
 }
-function aplicarLojaNova(nova){
-  if (!nova || !nova.cod) return;
-  if (!encontrarLoja(nova.cod)) CFG.lojas.push(Object.assign({dadosTecnicos: {}}, nova));
-}
-/* recompõe CFG.lojas a partir do checklists.json puro + base central + fila pendente */
+/* recompõe CFG.lojas a partir do checklists.json puro + base central + fila pendente.
+   A lista de lojas é só a do banco de dados: o técnico não cadastra loja em campo
+   (inclusão de loja nova é feita pelo back-end, no checklists.json). */
 function aplicarExtrasLocais(){
   if (CFG._lojasBase) CFG.lojas = JSON.parse(CFG._lojasBase);
   else CFG._lojasBase = JSON.stringify(CFG.lojas);
   migrarExtrasAntigos();
   central.cache = lerLS('baseCentralCache', null);
   if (central.cache){
-    (central.cache.lojasNovas || []).forEach(aplicarLojaNova);
     for (const chave in (central.cache.dadosTecnicos || {})) aplicarDadosTecnicos(chave, central.cache.dadosTecnicos[chave]);
     central.ultimaSync = central.cache.baixadoEm || null;
   }
   for (const it of lerLS('filaCentral', [])){
-    if (it.tipo === 'lojaNova') aplicarLojaNova({cod: it.cod, nome: it.nome, endereco: it.endereco, rede: it.rede});
     if (it.tipo === 'dadosTecnicos') aplicarDadosTecnicos(`${it.cod}|${it.bloco}`, it.dados);
   }
 }
-/* versões anteriores guardavam tudo só neste aparelho (lojasExtras / dadosTecnicosExtras):
+/* versões anteriores guardavam o cadastro técnico só neste aparelho (dadosTecnicosExtras):
    na primeira abertura da versão nova, esse acervo entra na fila para ir à base central */
 function migrarExtrasAntigos(){
   if (localStorage.getItem('extrasMigrados')) return;
-  const fila = lerLS('filaCentral', []);
-  for (const nova of lerLS('lojasExtras', [])){
-    if (nova && nova.cod) fila.push({tipo:'lojaNova', cod:nova.cod, nome:nova.nome||'', endereco:nova.endereco||'', rede:nova.rede||'', tecnico:'', criadoEm:new Date().toISOString()});
-  }
+  const fila = lerLS('filaCentral', []).filter(it => it.tipo === 'dadosTecnicos');
   const overrides = lerLS('dadosTecnicosExtras', {});
   for (const chave in overrides){
     const [cod, bloco] = chave.split('|');
@@ -226,14 +225,11 @@ async function enviarFilaCentral(){
     // enviados: saem da fila e passam a valer pela cópia local da base central
     const restante = lerLS('filaCentral', []).filter(it => !fila.some(f => f.tipo === it.tipo && f.cod === it.cod && (f.bloco||'') === (it.bloco||'') && f.criadoEm === it.criadoEm));
     gravarLS('filaCentral', restante);
-    const cache = central.cache || {dadosTecnicos:{}, lojasNovas:[]};
+    const cache = central.cache || {dadosTecnicos:{}};
     for (const it of fila){
-      if (it.tipo === 'dadosTecnicos'){
-        const k = `${it.cod}|${it.bloco}`;
-        cache.dadosTecnicos[k] = Object.assign({}, cache.dadosTecnicos[k] || {}, it.dados);
-      } else if (it.tipo === 'lojaNova' && !cache.lojasNovas.some(l => l.cod === it.cod)){
-        cache.lojasNovas.push({cod:it.cod, nome:it.nome, endereco:it.endereco, rede:it.rede});
-      }
+      if (it.tipo !== 'dadosTecnicos') continue;
+      const k = `${it.cod}|${it.bloco}`;
+      cache.dadosTecnicos[k] = Object.assign({}, cache.dadosTecnicos[k] || {}, it.dados);
     }
     central.cache = cache; gravarLS('baseCentralCache', cache);
     localStorage.removeItem('lojasExtras'); localStorage.removeItem('dadosTecnicosExtras');
@@ -252,7 +248,7 @@ async function baixarBaseCentral(){
     clearTimeout(t);
     const j = await r.json();
     if (!j.ok) throw new Error(j.erro || 'resposta inválida');
-    central.cache = {dadosTecnicos: j.dadosTecnicos || {}, lojasNovas: j.lojasNovas || [], baixadoEm: new Date().toISOString()};
+    central.cache = {dadosTecnicos: j.dadosTecnicos || {}, baixadoEm: new Date().toISOString()};
     gravarLS('baseCentralCache', central.cache);
     central.erro = null;
     aplicarExtrasLocais();
@@ -266,8 +262,7 @@ async function baixarBaseCentral(){
 }
 async function sincronizarCentral(){
   await enviarFilaCentral();
-  const ok = await baixarBaseCentral();
-  if (ok && !visita && typeof telaInicio === 'function' && document.getElementById('bNova')) telaInicio();
+  await baixarBaseCentral();   // o cadastro baixado já vale para a próxima loja escolhida na tela inicial
 }
 function textoStatusCentral(){
   const pend = lerLS('filaCentral', []).length;
@@ -284,11 +279,6 @@ function atualizarStatusCentral(){
   if (el) el.textContent = textoStatusCentral();
 }
 
-function salvarLojaNova(loja){
-  aplicarLojaNova(loja);
-  enfileirarCentral({tipo:'lojaNova', cod:loja.cod, nome:loja.nome||'', endereco:loja.endereco||'', rede:loja.rede||'',
-    tecnico: localStorage.getItem('ultimoTecnico') || '', criadoEm:new Date().toISOString()});
-}
 /* quando todos os campos técnicos do bloco foram respondidos nesta visita, grava no
    cadastro da loja e manda para a base central, para os outros aparelhos não perguntarem de novo */
 function salvarDadosTecnicosSeCompleto(chk, v){
@@ -380,40 +370,27 @@ function montarTela({titulo, sub, voltar, html, barra}){
 }
 $voltar.onclick = () => { if (voltarPara) voltarPara(); };
 
-/* ===================== tela: início ===================== */
-async function telaInicio(){
-  visita = null;
-  liberarUrls();
-  const vs = (await BD.listarVisitas()).sort((a,b) => b.criadoEm.localeCompare(a.criadoEm));
-  const linha = v => {
-    const chk = CFG.checklists.find(c => c.id === v.checklist);
-    const nc = v.finalizada ? contarNC(chk, v) : 0;
-    const excluir = !v.finalizada
-      ? `<button type="button" class="btn-excluir" data-excluir="${esc(v.id)}" aria-label="Excluir rascunho" title="Excluir rascunho">🗑</button>`
-      : '';
-    return `<div class="linha-lista" data-abrir="${v.id}">
-      <div class="cresce">
-        <div class="t">${esc(v.loja.cod)} — ${esc(v.loja.nome || 'sem nome')}</div>
-        <div class="s">${esc(chk ? chk.titulo : v.checklist)} · ${dataBR(v.criadoEm)} ${horaBR(v.criadoEm).slice(0,5)}${
-          nc ? ` · <strong style="color:var(--vermelho)">${nc} não conforme${nc>1?'s':''}</strong>` : ''}</div>
-      </div>
-      <span class="pilula ${v.finalizada ? 'pronta' : 'rascunho'}">${v.finalizada ? 'finalizada' : 'rascunho'}</span>
-      ${excluir}
-    </div>`;
-  };
-  const rasc = vs.filter(v => !v.finalizada), fim = vs.filter(v => v.finalizada);
-  montarTela({
-    titulo: 'Equipe Gerador', sub: 'Grupo DMA',
-    html: (vs.length === 0
-      ? `<div class="vazio"><div class="ico">🔧</div>Nenhuma visita registrada ainda.<br>
-         Toque em <strong>Nova visita</strong> para começar.</div>`
-      : '') +
-      (rasc.length ? `<h2>Em andamento</h2>${rasc.map(linha).join('')}` : '') +
-      (fim.length  ? `<h2>Finalizadas</h2>${fim.map(linha).join('')}` : '') +
-      `<div class="status-central" id="statusCentral">${esc(textoStatusCentral())}</div>`,
-    barra: `<button class="btn" id="bNova">+ Nova visita</button>`
-  });
-  document.getElementById('bNova').onclick = telaNovaVisita;
+/* ===================== telas: em andamento / relatórios =====================
+   O que o técnico responde é salvo a cada toque; se o app fechar no meio (ligação,
+   bateria), a visita fica em "Em andamento" para continuar de onde parou.
+   Visitas finalizadas ficam em "Relatórios" (abrir, gerar PDF, compartilhar). */
+function linhaVisita(v){
+  const chk = CFG.checklists.find(c => c.id === v.checklist);
+  const nc = v.finalizada ? contarNC(chk, v) : 0;
+  const excluir = !v.finalizada
+    ? `<button type="button" class="btn-excluir" data-excluir="${esc(v.id)}" aria-label="Excluir" title="Excluir">🗑</button>`
+    : '';
+  return `<div class="linha-lista" data-abrir="${v.id}">
+    <div class="cresce">
+      <div class="t">${esc(v.loja.cod)} — ${esc(v.loja.nome || 'sem nome')}</div>
+      <div class="s">${esc(chk ? chk.titulo : v.checklist)} · ${dataBR(v.criadoEm)} ${horaBR(v.criadoEm).slice(0,5)} · ${esc((v.tecnico || '').split(' ')[0])}${
+        nc ? ` · <strong style="color:var(--vermelho)">${nc} não conforme${nc>1?'s':''}</strong>` : ''}</div>
+    </div>
+    <span class="pilula ${v.finalizada ? 'pronta' : 'rascunho'}">${v.finalizada ? 'finalizada' : 'em andamento'}</span>
+    ${excluir}
+  </div>`;
+}
+function ligarListaVisitas(recarregar){
   $tela.querySelectorAll('[data-abrir]').forEach(el => {
     el.onclick = async () => {
       visita = await BD.lerVisita(el.dataset.abrir);
@@ -424,16 +401,40 @@ async function telaInicio(){
     btn.onclick = async (e) => {
       e.stopPropagation();
       const id = btn.dataset.excluir;
-      if (!confirm('Excluir este rascunho? As respostas e fotos dele serão apagadas e isso não pode ser desfeito.')) return;
+      if (!confirm('Excluir esta visita em andamento? As respostas e fotos dela serão apagadas e isso não pode ser desfeito.')) return;
       const v = await BD.lerVisita(id);
       if (v){
         const idsFoto = Object.values(v.fotos || {}).flat();
         for (const fid of idsFoto) await BD.apagarFoto(fid);
       }
       await BD.apagarVisita(id);
-      telaInicio();
+      recarregar();
     };
   });
+}
+async function telaEmAndamento(){
+  visita = null;
+  liberarUrls();
+  const vs = (await BD.listarVisitas()).filter(v => !v.finalizada).sort((a,b) => b.criadoEm.localeCompare(a.criadoEm));
+  montarTela({
+    titulo: 'Em andamento', sub: `${vs.length} visita${vs.length === 1 ? '' : 's'} para continuar`, voltar: telaInicio,
+    html: vs.length
+      ? `<div class="aviso">Toque na visita para continuar de onde parou. Tudo que foi respondido está guardado.</div>${vs.map(linhaVisita).join('')}`
+      : `<div class="vazio"><div class="ico">✅</div>Nenhuma visita em andamento.</div>`
+  });
+  ligarListaVisitas(telaEmAndamento);
+}
+async function telaRelatorios(){
+  visita = null;
+  liberarUrls();
+  const vs = (await BD.listarVisitas()).filter(v => v.finalizada).sort((a,b) => b.criadoEm.localeCompare(a.criadoEm));
+  montarTela({
+    titulo: 'Relatórios', sub: `${vs.length} relatório${vs.length === 1 ? '' : 's'} gerado${vs.length === 1 ? '' : 's'} neste aparelho`, voltar: telaInicio,
+    html: vs.length
+      ? vs.map(linhaVisita).join('')
+      : `<div class="vazio"><div class="ico">📄</div>Nenhum relatório gerado ainda.</div>`
+  });
+  ligarListaVisitas(telaRelatorios);
 }
 
 function contarNC(chk, v){
@@ -442,16 +443,23 @@ function contarNC(chk, v){
     situacao(it, v.respostas[it.id]) === 'Não conforme').length;
 }
 
-/* ===================== tela: nova visita ===================== */
-async function telaNovaVisita(){
+/* ===================== tela: início (técnico, rede, loja, checklist) ===================== */
+async function telaInicio(){
+  visita = null;
   liberarUrls();
   const ultimoTec = localStorage.getItem('ultimoTecnico') || '';
   const ultimaRede = localStorage.getItem('ultimaRede') || 'Supermercados BH';
   const redes = ['Supermercados BH', 'DMA'];
+  const todas = await BD.listarVisitas();
+  const nAndamento = todas.filter(v => !v.finalizada).length, nRelatorios = todas.filter(v => v.finalizada).length;
 
   montarTela({
-    titulo: 'Nova visita', voltar: telaInicio,
+    titulo: 'Equipe Gerador', sub: `Grupo DMA · versão ${VERSAO_APP}`,
     html: `
+    <div class="atalhos">
+      <button type="button" class="btn sec" id="bAndamento">Em andamento${nAndamento ? ` <b>${nAndamento}</b>` : ''}</button>
+      <button type="button" class="btn sec" id="bRelatorios">Relatórios${nRelatorios ? ` <b>${nRelatorios}</b>` : ''}</button>
+    </div>
     <div class="cartao">
       <label class="campo"><span>Técnico responsável</span>
         <select id="fTec">
@@ -476,21 +484,6 @@ async function telaNovaVisita(){
         </select>
       </label>
       <div id="lojaInfo" class="s" style="font-size:12.5px;color:var(--cinza);margin:-8px 0 10px"></div>
-      <button type="button" class="btn sec pq" id="bNovaLoja">+ Nova loja</button>
-
-      <div id="painelNovaLoja" class="oculto" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--linha)">
-        <label class="campo"><span>Código da loja</span>
-          <input type="text" id="nlCod" placeholder="Ex.: D200" autocapitalize="characters"></label>
-        <label class="campo"><span>Nome da loja</span>
-          <input type="text" id="nlNome" placeholder="Ex.: NOVA LIMA"></label>
-        <label class="campo"><span>Endereço</span>
-          <input type="text" id="nlEnd" placeholder="Endereço completo"></label>
-        <div id="erroNovaLoja"></div>
-        <div style="display:flex;gap:10px">
-          <button type="button" class="btn sec" id="bCancelarLoja" style="flex:1">Cancelar</button>
-          <button type="button" class="btn" id="bSalvarLoja" style="flex:1">Salvar loja</button>
-        </div>
-      </div>
 
       <label class="campo" style="margin-top:14px"><span>Matrícula do gerente que acompanhou</span>
         <input type="number" id="fMat" inputmode="numeric" placeholder="Ex.: 653335"></label>
@@ -511,8 +504,12 @@ async function telaNovaVisita(){
         <span style="color:var(--cinza);font-size:20px">›</span>
       </div>`).join('')}
     </div>
-    <div id="erroNova"></div>`
+    <div id="erroNova"></div>
+    <div class="status-central"><div id="statusCentral">${esc(textoStatusCentral())}</div>
+      <div class="versao">Equipe Gerador — versão ${esc(VERSAO_APP)} (${esc(DATA_VERSAO)}) · base de lojas ${esc(CFG.versao || '')}</div></div>`
   });
+  document.getElementById('bAndamento').onclick = telaEmAndamento;
+  document.getElementById('bRelatorios').onclick = telaRelatorios;
 
   const $tec = document.getElementById('fTec');
   const $redeBox = document.getElementById('fRede');
@@ -597,41 +594,6 @@ async function telaNovaVisita(){
   };
   $loja.onchange = preencherInfoLoja;
 
-  const $painel = document.getElementById('painelNovaLoja');
-  const limparPainelLoja = () => {
-    $painel.classList.add('oculto');
-    document.getElementById('nlCod').value = '';
-    document.getElementById('nlNome').value = '';
-    document.getElementById('nlEnd').value = '';
-    document.getElementById('erroNovaLoja').innerHTML = '';
-  };
-  document.getElementById('bNovaLoja').onclick = () => $painel.classList.toggle('oculto');
-  document.getElementById('bCancelarLoja').onclick = limparPainelLoja;
-  document.getElementById('bSalvarLoja').onclick = () => {
-    const cod = document.getElementById('nlCod').value.trim().toUpperCase();
-    const nome = document.getElementById('nlNome').value.trim().toUpperCase();
-    const end = document.getElementById('nlEnd').value.trim();
-    const $erro = document.getElementById('erroNovaLoja');
-    if (!cod || !nome){
-      $erro.innerHTML = `<div class="aviso erro">Informe ao menos o código e o nome da loja.</div>`;
-      return;
-    }
-    if (encontrarLoja(cod)){
-      $erro.innerHTML = `<div class="aviso erro">Já existe uma loja cadastrada com o código ${esc(cod)}.</div>`;
-      return;
-    }
-    if (!$rede.value){
-      $erro.innerHTML = `<div class="aviso erro">Escolha primeiro a rede que está atendendo.</div>`;
-      return;
-    }
-    salvarLojaNova({cod, nome, endereco: end, rede: $rede.value, dadosTecnicos: {}});
-    $busca.value = cod;
-    montarListaLojas(false);
-    $loja.value = cod;
-    preencherInfoLoja();
-    limparPainelLoja();
-  };
-
   $lista.querySelectorAll('[data-chk]').forEach(el => {
     el.onclick = async () => {
       const $err = document.getElementById('erroNova');
@@ -691,14 +653,12 @@ function telaChecklist(){
   montarTela({
     titulo: chk.titulo,
     sub: `${visita.loja.cod} — ${visita.loja.nome || 's/ nome'} · ${visita.tecnico.split(' ')[0]}`,
-    voltar: telaInicio,
+    voltar: async () => { await BD.salvarVisita(visita); telaInicio(); },   // sair guarda a visita em "Em andamento"
     html: `<div class="progresso"><i id="pbar"></i></div><div class="prog-txt" id="ptxt"></div>${html}`,
-    barra: `<button class="btn sec" id="bSalvar" style="flex:1">Salvar e sair</button>
-            <button class="btn" id="bRevisar" style="flex:1.4">Revisar</button>`
+    barra: `<button class="btn" id="bRevisar" style="flex:1">Revisar e finalizar</button>`
   });
   ligarItens(chk, itens);
   atualizarProgresso(chk);
-  document.getElementById('bSalvar').onclick = async () => { await BD.salvarVisita(visita); telaInicio(); };
   document.getElementById('bRevisar').onclick = async () => { await BD.salvarVisita(visita); telaRevisao(); };
   const bCorr = document.getElementById('bCorrigirDT');
   if (bCorr) bCorr.onclick = async () => { visita._dtBloqueado = false; await BD.salvarVisita(visita); telaChecklist(); };
@@ -967,7 +927,7 @@ async function telaRelatorio(){
   }
 
   montarTela({
-    titulo: 'Relatório', sub: `${visita.loja.cod} · ${dataBR(visita.criadoEm)}`, voltar: telaInicio,
+    titulo: 'Relatório', sub: `${visita.loja.cod} · ${dataBR(visita.criadoEm)}`, voltar: telaRelatorios,
     html: `
       <div class="aviso nao-imprime">Para salvar em PDF: toque em <strong>Gerar PDF</strong> e escolha
       “Salvar como PDF” na tela de impressão do celular.</div>
