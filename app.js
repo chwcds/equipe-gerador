@@ -43,7 +43,7 @@ const BD = (() => {
 /* ===================== versão =====================
    Mostrada na tela inicial para conferir se o aparelho está com a versão publicada.
    A cada publicação: trocar aqui e no CACHE do sw.js. */
-const VERSAO_APP = '29';
+const VERSAO_APP = '30';
 const DATA_VERSAO = '20/09/2026';
 
 /* ===================== estado ===================== */
@@ -790,7 +790,10 @@ function htmlItem(it){
   let entrada = '';
   if (it.tipo === 'opcoes' || it.tipo === 'tristate'){
     entrada = `<div class="opcoes">${it.opcoes.map(o => {
-      const cls = RUINS.includes(o.toLowerCase()) ? 'ruim'
+      // perguntas marcadas como invertido (ex.: "Existe vestígio de pragas?") têm o
+      // "Não" como resposta esperada, então o alerta vermelho vai no "Sim"
+      const ruim = it.invertido ? o.toLowerCase() === 'sim' : RUINS.includes(o.toLowerCase());
+      const cls = ruim ? 'ruim'
                 : o.toLowerCase().startsWith('não se aplica') ? 'na' : '';
       const marcado = (r === o) || (o === 'Outro' && ehOutro(it, r));
       return `<button type="button" class="${cls}" data-op="${esc(it.id)}" data-val="${esc(o)}"
