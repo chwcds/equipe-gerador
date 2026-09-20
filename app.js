@@ -43,7 +43,7 @@ const BD = (() => {
 /* ===================== versão =====================
    Mostrada na tela inicial para conferir se o aparelho está com a versão publicada.
    A cada publicação: trocar aqui e no CACHE do sw.js. */
-const VERSAO_APP = '28';
+const VERSAO_APP = '29';
 const DATA_VERSAO = '20/09/2026';
 
 /* ===================== estado ===================== */
@@ -803,8 +803,14 @@ function htmlItem(it){
         style="margin-top:9px" placeholder="${numerico ? 'Qual? Digite o valor' : 'Qual? Digite o nome'}" value="${esc(r === 'Outro' ? '' : (ehOutro(it, r) ? r : ''))}">`;
     }
   } else if (it.tipo === 'numero'){
-    entrada = `<input type="text" inputmode="decimal" data-in="${esc(it.id)}"
-       value="${esc(r || '')}" placeholder="Digite o valor">`;
+    // teclado numérico simplificado: campo só-leitura (não abre o teclado do
+    // celular) + botões grandes abaixo, para medições digitadas em campo
+    entrada = `<input type="text" inputmode="none" readonly data-in="${esc(it.id)}" class="visor-num"
+       value="${esc(r || '')}" placeholder="Toque nos números abaixo">
+       <div class="teclado-num" data-teclado="${esc(it.id)}">${
+         ['1','2','3','4','5','6','7','8','9',',','0','del'].map(t =>
+           `<button type="button" data-tecla="${t}">${t === 'del' ? '⌫' : t}</button>`).join('')
+       }</div>`;
   } else if (it.tipo === 'texto'){
     entrada = `<input type="text" data-in="${esc(it.id)}" value="${esc(r || '')}" placeholder="Digite aqui">`;
   } else if (it.tipo === 'texto_amplo'){
@@ -844,6 +850,30 @@ function ligarItens(chk, itens){
   $tela.querySelectorAll('[data-in]').forEach(el => {
     el.oninput = () => { visita.respostas[el.dataset.in] = el.value; };
     el.onblur  = async () => { salvarDadosTecnicosSeCompleto(chk, visita); await BD.salvarVisita(visita); redesenhar(chk, itens); };
+  });
+  // teclado numérico simplificado: cada toque atualiza o campo (só-leitura) e
+  // agenda a mesma gravação/recalculo que aconteceria ao sair do campo
+  $tela.querySelectorAll('[data-teclado]').forEach(cx => {
+    const id = cx.dataset.teclado;
+    const input = $tela.querySelector(`input[data-in="${CSS.escape(id)}"]`);
+    if (!input) return;
+    cx.querySelectorAll('[data-tecla]').forEach(b => {
+      b.onclick = () => {
+        let v = input.value || '';
+        const t = b.dataset.tecla;
+        if (t === 'del') v = v.slice(0, -1);
+        else if (t === ','){ if (v && !v.includes(',')) v += ','; }
+        else v += t;
+        input.value = v;
+        input.dispatchEvent(new Event('input', {bubbles:true}));
+        clearTimeout(cx._t);
+        cx._t = setTimeout(async () => {
+          salvarDadosTecnicosSeCompleto(chk, visita);
+          await BD.salvarVisita(visita);
+          redesenhar(chk, itens);
+        }, 500);
+      };
+    });
   });
   $tela.querySelectorAll('[data-outro]').forEach(el => {
     el.oninput = () => { visita.respostas[el.dataset.outro] = el.value.trim() || 'Outro'; };
