@@ -43,7 +43,7 @@ const BD = (() => {
 /* ===================== versão =====================
    Mostrada na tela inicial para conferir se o aparelho está com a versão publicada.
    A cada publicação: trocar aqui e no CACHE do sw.js. */
-const VERSAO_APP = '17';
+const VERSAO_APP = '18';
 const DATA_VERSAO = '20/09/2026';
 
 /* ===================== estado ===================== */
@@ -73,16 +73,16 @@ function ehOutro(it, r){
 }
 function respostaVazia(it, r){ return r == null || r === '' || (r === 'Outro' && temOutro(it)); }
 
-/* rede da visita: nas lojas do Supermercados BH a foto continua obrigatória em toda
-   pergunta de opções; nas lojas da DMA (EPA/Mineirão) a resposta escolhida entre as
-   opções dispensa foto (só exige quando marca "Outro") */
+/* rede da visita: nas lojas do Supermercados BH valem as regras de foto de cada
+   pergunta (obrigatória onde está marcada, opcional nas demais); nas lojas da DMA
+   (EPA/Mineirão) nenhuma foto é obrigatória — o técnico pode fotografar se quiser */
 function redeDaVisita(v){
   v = v || visita;
   if (!v || !v.loja) return null;
   const l = encontrarLoja(v.loja.cod);
   return (l && l.rede) || v.loja.rede || null;
 }
-function opcoesDispensamFoto(rede){ return rede != null && rede !== 'Supermercados BH'; }
+function fotosDispensadas(rede){ return rede != null && rede !== 'Supermercados BH'; }
 
 /* ===================== regra de conformidade =====================
    Mesma regra conferida contra os 33 relatórios em PDF:
@@ -116,9 +116,7 @@ const visivel = (item, respostas) => {
 function exigeFoto(item, resp){
   if (item._bloqueado) return false; // dado técnico já cadastrado da loja: não pede foto de novo
   if (!item.foto) return false;
-  // pergunta de opções: resposta escolhida entre as opções dispensa foto;
-  // só exige foto quando o técnico marcou "Outro" e digitou um nome
-  if (item.foto.sempre && (item.tipo === 'opcoes' || item.tipo === 'tristate') && opcoesDispensamFoto(redeDaVisita())) return ehOutro(item, resp);
+  if (fotosDispensadas(redeDaVisita())) return false;   // lojas da DMA: foto nunca é obrigatória
   if (item.foto.sempre) return true;
   if (item.foto.quando) return resp != null &&
     String(resp).trim().toLowerCase() === String(item.foto.quando).trim().toLowerCase();
@@ -524,12 +522,12 @@ async function telaInicio(){
   let geo = null, geoOk = false;
 
   const atualizarResumos = () => {
-    const dispensa = opcoesDispensamFoto($rede.value);
+    const dispensa = fotosDispensadas($rede.value);
     CFG.checklists.forEach(c => {
       const el = $lista.querySelector(`[data-resumo="${CSS.escape(c.id)}"]`);
       if (!el) return;
-      const comFoto = c.itens.filter(i => i.foto && (i.foto.quando || !dispensa || !(i.tipo === 'opcoes' || i.tipo === 'tristate') || temOutro(i))).length;
-      el.textContent = `${c.itens.length} itens · ${comFoto} com foto`;
+      const comFoto = c.itens.filter(i => i.foto).length;
+      el.textContent = dispensa ? `${c.itens.length} itens · fotos opcionais` : `${c.itens.length} itens · ${comFoto} com foto`;
     });
   };
   const $busca = document.getElementById('fBuscaLoja');
@@ -686,8 +684,8 @@ function htmlItem(it){
   }
   const prio = it.prioridade ? `<span class="tag ${CLASSE_PRIO[it.prioridade]||'media'}">${esc(it.prioridade)}</span>` : '';
   let rotuloFoto = '';
-  if (it.foto && it.foto.quando) rotuloFoto = `foto se ${it.foto.quando}`;
-  else if (it.foto && it.foto.sempre && (it.tipo === 'opcoes' || it.tipo === 'tristate') && opcoesDispensamFoto(redeDaVisita())) rotuloFoto = temOutro(it) ? 'foto se Outro' : '';
+  if (it.foto && fotosDispensadas(redeDaVisita())) rotuloFoto = '';          // DMA: sem exigência de foto
+  else if (it.foto && it.foto.quando) rotuloFoto = `foto se ${it.foto.quando}`;
   else if (it.foto) rotuloFoto = 'foto';
   const tagFoto = rotuloFoto ? `<span class="tag foto">${esc(rotuloFoto)}</span>` : '';
   let entrada = '';
