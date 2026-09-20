@@ -1,6 +1,6 @@
 /* Service worker — deixa o app abrir sem internet.
    Ao publicar uma versão nova, troque o número em CACHE. */
-const CACHE = 'equipe-gerador-v18';
+const CACHE = 'equipe-gerador-v19';
 const ARQUIVOS = [
   './', './index.html', './app.js', './checklists.json', './manifest.webmanifest',
   './logo.png', './icon-192.png', './icon-512.png'
