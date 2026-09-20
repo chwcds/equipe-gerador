@@ -43,8 +43,8 @@ const BD = (() => {
 /* ===================== versão =====================
    Mostrada na tela inicial para conferir se o aparelho está com a versão publicada.
    A cada publicação: trocar aqui e no CACHE do sw.js. */
-const VERSAO_APP = '20';
-const DATA_VERSAO = '20/09/2026';
+const VERSAO_APP = '21';
+const DATA_VERSAO = '21/09/2026';
 
 /* ===================== estado ===================== */
 let CFG = null;            // checklists.json
@@ -357,7 +357,21 @@ const $barra = document.getElementById('barra');
 const $barraInt = document.getElementById('barraInterno');
 let voltarPara = null;
 
+const TITULO_APP = document.title;
+
+/* nome dos arquivos gerados (PDF/JSON): RELATORIO_LOJA_D237_2026-09-04_ANDREI_PELOSI
+   (código da loja, data da visita, dois primeiros nomes do técnico, sem acentos) */
+function nomeArquivoRelatorio(v){
+  const d = new Date(v.criadoEm), p = n => String(n).padStart(2,'0');
+  const data = `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
+  const tec = String(v.tecnico || '').normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .toUpperCase().replace(/[^A-Z0-9 ]/g, ' ').split(/\s+/).filter(Boolean).slice(0, 2).join('_');
+  const cod = String(v.loja?.cod || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  return `RELATORIO_LOJA_${cod}_${data}${tec ? '_' + tec : ''}`;
+}
+
 function montarTela({titulo, sub, voltar, html, barra}){
+  document.title = TITULO_APP;
   $titulo.innerHTML = `<span>${esc(titulo)}</span>` + (sub ? `<small>${esc(sub)}</small>` : '');
   voltarPara = voltar || null;
   $voltar.classList.toggle('oculto', !voltar);
@@ -974,11 +988,14 @@ async function telaRelatorio(){
             <button class="btn" id="bPdf" style="flex:1.3">Gerar PDF</button>`
   });
 
-  document.getElementById('bPdf').onclick = () => window.print();
-  document.getElementById('bJson').onclick = () => exportarJSON(chk, visiveis);
+  // o título da página vira o nome sugerido do PDF em "Salvar como PDF"
+  const nomeArq = nomeArquivoRelatorio(visita);
+  document.title = nomeArq;
+  document.getElementById('bPdf').onclick = () => { document.title = nomeArq; window.print(); };
+  document.getElementById('bJson').onclick = () => exportarJSON(chk, visiveis, nomeArq);
 }
 
-function exportarJSON(chk, visiveis){
+function exportarJSON(chk, visiveis, nomeArq){
   const dados = {
     relatorio_id: visita.id, versao_checklist: CFG.versao,
     checklist: {id: chk.id, titulo: chk.titulo, bloco: chk.bloco},
@@ -997,7 +1014,7 @@ function exportarJSON(chk, visiveis){
       qtd_fotos: (visita.fotos[it.id] || []).length
     }))
   };
-  const nome = `relatorio_${visita.loja.cod}_${dataBR(visita.criadoEm).replace(/\//g,'-')}_${visita.id}.json`;
+  const nome = `${nomeArq || nomeArquivoRelatorio(visita)}.json`;
   const blob = new Blob([JSON.stringify(dados, null, 1)], {type:'application/json'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob); a.download = nome;
