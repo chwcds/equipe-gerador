@@ -1,25 +1,11 @@
 {
- "versao": "2026-09-15 09:10",
+ "versao": "2026-09-20 18:00",
  "checklists": [
   {
    "id": "rotina",
    "titulo": "Inspeção de Rotina — Gerador",
    "bloco": "Gerador",
    "itens": [
-    {
-     "id": "rg_motor_marca",
-     "n": "0",
-     "secao": "Dados Técnicos",
-     "pergunta": "Marca/Modelo do Motor",
-     "tipo": "texto",
-     "opcoes": [],
-     "foto": {
-      "sempre": true
-     },
-     "obs": false,
-     "prioridade": "Alta",
-     "cond": null
-    },
     {
      "id": "rg_tipo_funcionamento",
      "n": "0.5",
@@ -241,20 +227,6 @@
    "titulo": "Preventiva do Gerador",
    "bloco": "Gerador",
    "itens": [
-    {
-     "id": "rg_motor_marca",
-     "n": "0",
-     "secao": "Dados Técnicos",
-     "pergunta": "Marca/Modelo do Motor",
-     "tipo": "texto",
-     "opcoes": [],
-     "foto": {
-      "sempre": true
-     },
-     "obs": false,
-     "prioridade": "Alta",
-     "cond": null
-    },
     {
      "id": "rg_tipo_funcionamento",
      "n": "0.5",
