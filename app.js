@@ -43,7 +43,7 @@ const BD = (() => {
 /* ===================== versão =====================
    Mostrada na tela inicial para conferir se o aparelho está com a versão publicada.
    A cada publicação: trocar aqui e no CACHE do sw.js. */
-const VERSAO_APP = '24';
+const VERSAO_APP = '25';
 const DATA_VERSAO = '20/09/2026';
 
 /* ===================== estado ===================== */
@@ -400,15 +400,18 @@ let voltarPara = null;
 
 const TITULO_APP = document.title;
 
-/* nome dos arquivos gerados (PDF/JSON): RELATORIO_LOJA_D237_2026-09-04_ANDREI_PELOSI
-   (código da loja, data da visita, dois primeiros nomes do técnico, sem acentos) */
+/* nome dos arquivos gerados (PDF/JSON): RELATORIO_ROTINA_LOJA_D237_2026-09-04_ANDREI_PELOSI
+   (tipo do checklist, código da loja, data da visita, dois primeiros nomes do técnico, sem
+   acentos) — o tipo do checklist entra no início para não haver conflito de nome quando a
+   mesma loja recebe mais de um checklist (ex.: rotina e preventiva) no mesmo dia */
 function nomeArquivoRelatorio(v){
   const d = new Date(v.criadoEm), p = n => String(n).padStart(2,'0');
   const data = `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
   const tec = String(v.tecnico || '').normalize('NFD').replace(/[̀-ͯ]/g, '')
     .toUpperCase().replace(/[^A-Z0-9 ]/g, ' ').split(/\s+/).filter(Boolean).slice(0, 2).join('_');
   const cod = String(v.loja?.cod || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
-  return `RELATORIO_LOJA_${cod}_${data}${tec ? '_' + tec : ''}`;
+  const chkNome = String(v.checklist || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  return `RELATORIO_${chkNome ? chkNome + '_' : ''}LOJA_${cod}_${data}${tec ? '_' + tec : ''}`;
 }
 
 function montarTela({titulo, sub, voltar, html, barra}){
