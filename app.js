@@ -44,7 +44,7 @@ const BD = (() => {
 /* ===================== versão =====================
    Mostrada na tela inicial para conferir se o aparelho está com a versão publicada.
    A cada publicação: trocar aqui e no CACHE do sw.js. */
-const VERSAO_APP = '31';
+const VERSAO_APP = '32';
 const DATA_VERSAO = '21/09/2026';
 
 /* ===================== estado ===================== */
@@ -54,6 +54,12 @@ let telaAtual = '';        // 'inicio' | 'andamento' | 'relatorios' | 'checklist
 const urlsFoto = new Map();// id -> objectURL (liberados ao trocar de tela)
 
 const uid = () => (Date.now().toString(36) + Math.random().toString(36).slice(2,8)).toUpperCase();
+/* número do relatório: só algarismos, data da visita + hora + 2 dígitos de desempate
+   (ex.: 20260921-14325287) — legível, ordenável e sem repetir entre aparelhos */
+function numeroRelatorio(d = new Date()){
+  const p = n => String(n).padStart(2,'0');
+  return `${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}${p(Math.floor(Math.random()*100))}`;
+}
 const esc = s => String(s==null?'':s).replace(/[&<>"']/g, c =>
   ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
@@ -105,6 +111,10 @@ function redeDaVisita(v){
   return (l && l.rede) || v.loja.rede || null;
 }
 function fotosDispensadas(rede){ return rede != null && rede !== 'Supermercados BH'; }
+/* logo do relatório: Supermercados BH para as lojas do BH; DMA para as lojas da DMA (EPA/Mineirão) */
+const ehBH = rede => rede === 'Supermercados BH';
+function logoDaRede(rede){ return ehBH(rede) ? 'logo-bh.svg' : 'logo.png'; }
+function nomeDaRede(rede){ return ehBH(rede) ? 'Supermercados BH' : 'Grupo DMA'; }
 
 /* ===================== regra de conformidade =====================
    Perguntas numeradas (ou com prioridade) de Sim/Não são conformidade.
@@ -611,7 +621,7 @@ function linhaVisita(v){
       <div class="s">${esc(chk ? chk.titulo : v.checklist)} · ${dataBR(v.criadoEm)} ${horaBR(v.criadoEm).slice(0,5)} · ${esc((v.tecnico || '').split(' ')[0])}${
         nc ? ` · <strong style="color:var(--vermelho)">${nc} não conforme${nc>1?'s':''}</strong>` : ''}</div>
     </div>
-    <span class="pilula ${v.finalizada ? 'pronta' : 'rascunho'}">${v.finalizada ? 'finalizada' : 'em andamento'}</span>
+    <span class="pilula ${v.finalizada ? (v.compartilhadoEm ? 'pronta' : 'enviar') : 'rascunho'}">${v.finalizada ? (v.compartilhadoEm ? 'enviado' : 'enviar') : 'em andamento'}</span>
     ${excluir}
   </div>`;
 }
@@ -686,6 +696,7 @@ async function telaInicio(){
   const redes = ['Supermercados BH', 'DMA'];
   const todas = await BD.listarVisitas().catch(() => []);
   const nAndamento = todas.filter(v => !v.finalizada).length, nRelatorios = todas.filter(v => v.finalizada).length;
+  const nNaoEnviados = todas.filter(v => v.finalizada && !v.compartilhadoEm).length;
 
   montarTela({
     titulo: 'Equipe Gerador', sub: `Grupo DMA · versão ${VERSAO_APP}`,
@@ -694,6 +705,7 @@ async function telaInicio(){
       <button type="button" class="btn sec" id="bAndamento">Em andamento${nAndamento ? ` <b>${nAndamento}</b>` : ''}</button>
       <button type="button" class="btn sec" id="bRelatorios">Relatórios${nRelatorios ? ` <b>${nRelatorios}</b>` : ''}</button>
     </div>
+    ${nNaoEnviados ? `<div class="aviso erro" id="avisoNaoEnviados" style="cursor:pointer">${ICO.alerta} <strong>${nNaoEnviados} relatório${nNaoEnviados>1?'s':''} finalizado${nNaoEnviados>1?'s':''} ainda não enviado${nNaoEnviados>1?'s':''} por WhatsApp.</strong> Toque aqui para abrir e enviar.</div>` : ''}
     <div class="cartao">
       <div class="campo"><span class="rotulo">Técnico responsável</span>
         <div class="opcoes coluna" id="fTec">
@@ -744,6 +756,7 @@ async function telaInicio(){
   });
   document.getElementById('bAndamento').onclick = telaEmAndamento;
   document.getElementById('bRelatorios').onclick = telaRelatorios;
+  const avNE = document.getElementById('avisoNaoEnviados'); if (avNE) avNE.onclick = telaRelatorios;
 
   const $tecBox = document.getElementById('fTec');
   const $redeBox = document.getElementById('fRede');
@@ -864,7 +877,7 @@ async function telaInicio(){
         campos.forEach(c => { if (dt[c.id] != null && dt[c.id] !== '') respostas[c.id] = dt[c.id]; });
       }
       visita = {
-        id: uid(), criadoEm: new Date().toISOString(), finalizada: false,
+        id: numeroRelatorio(), criadoEm: new Date().toISOString(), finalizada: false,
         tecnico: tec,
         loja: {cod: loja.cod, nome: loja.nome, endereco: loja.endereco || '', rede: loja.rede || rede},
         matricula: document.getElementById('fMat').value.trim(),
@@ -1246,6 +1259,200 @@ function telaRevisao(){
   };
 }
 
+/* ===================== PDF do relatório (gerado no aparelho, com jsPDF) =====================
+   Antes o PDF dependia do "Salvar como PDF" da tela de impressão; agora o app monta o
+   arquivo sozinho, guarda no aparelho e abre o compartilhamento (WhatsApp) na sequência. */
+const imgCache = new Map();
+async function imagemDataURL(url){
+  if (imgCache.has(url)) return imgCache.get(url);
+  let dataUrl = '';
+  try {
+    const r = await fetch(url); const txt = url.endsWith('.svg') ? await r.text() : null;
+    if (txt){ const m = txt.match(new RegExp('data:image/[a-z]+;base64,[A-Za-z0-9+/=]+')); dataUrl = m ? m[0] : ''; }
+    else { const b = await r.blob(); dataUrl = await new Promise(ok => { const fr = new FileReader(); fr.onload = () => ok(fr.result); fr.readAsDataURL(b); }); }
+  } catch (e) {}
+  imgCache.set(url, dataUrl);
+  return dataUrl;
+}
+/* foto reduzida e recortada em 4:3 para o PDF (JPEG) */
+async function fotoParaPDF(fid, W = 900, H = 675){
+  const reg = await BD.lerFoto(fid).catch(() => null);
+  if (!reg) return null;
+  const bmp = await createImageBitmap(reg.blob).catch(() => null);
+  if (!bmp) return null;
+  const c = document.createElement('canvas'); c.width = W; c.height = H;
+  const cx = c.getContext('2d');
+  const esc_ = Math.max(W / bmp.width, H / bmp.height);
+  const w = bmp.width * esc_, h = bmp.height * esc_;
+  cx.fillStyle = '#fff'; cx.fillRect(0, 0, W, H);
+  cx.drawImage(bmp, (W - w) / 2, (H - h) / 2, w, h);
+  bmp.close && bmp.close();
+  return c.toDataURL('image/jpeg', 0.72);
+}
+function medidaImagem(dataUrl){
+  return new Promise(ok => { const im = new Image(); im.onload = () => ok({w: im.naturalWidth, h: im.naturalHeight}); im.onerror = () => ok({w:1, h:1}); im.src = dataUrl; });
+}
+async function gerarPDF(v){
+  const { jsPDF } = window.jspdf;
+  const chk = CFG.checklists.find(c => c.id === v.checklist);
+  const visiveis = itensDoChecklist(chk, v).filter(it => visivel(it, v.respostas));
+  const cont = {Conforme:0, 'Não conforme':0, 'Não se aplica':0, Informativo:0, Pendente:0};
+  for (const it of visiveis) cont[situacao(it, v.respostas[it.id])]++;
+  const loja = encontrarLoja(v.loja.cod) || v.loja;
+  const rede = redeDaVisita(v) || v.loja.rede;
+  const logoUrl = logoDaRede(rede);
+  const logo = await imagemDataURL(logoUrl);
+  const logoDim = logo ? await medidaImagem(logo) : {w:220, h:99};
+  const logoTipo = logo.startsWith('data:image/jpeg') ? 'JPEG' : 'PNG';
+  const emissao = v.emitidoEm ? `${dataBR(v.emitidoEm)}, ${horaBR(v.emitidoEm)}` : '—';
+  const VERDE = [21, 92, 61], VERM = [192, 57, 43], CINZA = [107, 114, 128], LINHA = [226, 229, 233], VERDE_CL = [232, 241, 237];
+
+  const doc = new jsPDF({unit:'mm', format:'a4', compress:true});
+  const PW = doc.internal.pageSize.getWidth(), PH = doc.internal.pageSize.getHeight();
+  const ML = 14, MR = 14, MT = 24, MB = 16, CW = PW - ML - MR;
+  doc.setProperties({title: nomeArquivoRelatorio(v), subject: chk.titulo, author: v.tecnico, creator: 'Equipe Gerador — Grupo DMA'});
+
+  // cabeçalho e rodapé repetidos em toda página
+  const cabecalho = () => {
+    const lh = 9, lw = lh * (logoDim.w / logoDim.h);
+    if (logo) doc.addImage(logo, logoTipo, ML, 7, lw, lh);
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(...VERDE);
+    doc.text('Relatório de Inspeção de Manutenção', ML + lw + 4, 10.5);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(85, 85, 85);
+    doc.text(`${chk.titulo} · ${v.loja.cod} — ${v.loja.nome || ''} · ${dataBR(v.criadoEm)}`, ML + lw + 4, 14.8);
+    doc.setFontSize(8); doc.setTextColor(...CINZA);
+    doc.text(`Relatório nº ${v.id}`, PW - MR, 10.5, {align:'right'});
+    doc.setDrawColor(...LINHA); doc.line(ML, 18.5, PW - MR, 18.5);
+  };
+  const rodape = (pag, total) => {
+    doc.setDrawColor(...LINHA); doc.line(ML, PH - 11, PW - MR, PH - 11);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(120, 120, 120);
+    doc.text(`Equipe Gerador — ${nomeDaRede(rede)} · emitido em ${emissao}`, ML, PH - 7);
+    doc.text(`Página ${pag} de ${total}`, PW - MR, PH - 7, {align:'right'});
+  };
+
+  // título
+  let y = MT;
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(15); doc.setTextColor(...VERDE);
+  doc.text('RELATÓRIO DE INSPEÇÃO DE MANUTENÇÃO', ML, y); y += 6;
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5); doc.setTextColor(...CINZA);
+  doc.text(`${chk.titulo} · Atendimento Equipe Gerador — ${nomeDaRede(rede)}`, ML, y); y += 5;
+
+  // dados da loja e do atendimento (duas colunas)
+  const esq = [['Loja', `${v.loja.cod} — ${v.loja.nome || ''}`], ['Endereço', v.loja.endereco || '—']];
+  if (loja.regional) esq.push(['Regional', String(loja.regional)]);
+  if (loja.cnpj) esq.push(['CNPJ', formatarCNPJ(loja.cnpj)]);
+  const dir = [['Responsável', v.tecnico], ['Data / Hora', `${dataBR(v.criadoEm)}, ${horaBR(v.criadoEm)}`], ['Geolocalização', localTexto(v.geo)]];
+  if (v.matricula) dir.push(['Matrícula do acompanhante', v.matricula]);
+  const linhas = []; for (let i = 0; i < Math.max(esq.length, dir.length); i++) linhas.push([...(esq[i] || ['','']), ...(dir[i] || ['',''])]);
+  doc.autoTable({
+    startY: y, margin: {left: ML, right: MR}, body: linhas, theme: 'grid',
+    styles: {font:'helvetica', fontSize: 8.5, cellPadding: 1.8, lineColor: LINHA, lineWidth: 0.2, textColor: [26,29,33], overflow: 'linebreak'},
+    columnStyles: {0: {fontStyle:'bold', fillColor: VERDE_CL, cellWidth: 24}, 1: {cellWidth: CW/2 - 24}, 2: {fontStyle:'bold', fillColor: VERDE_CL, cellWidth: 30}, 3: {cellWidth: CW/2 - 30}},
+    didParseCell: d => { if (d.cell.raw === '') d.cell.styles.fillColor = [255,255,255]; }
+  });
+  y = doc.lastAutoTable.finalY + 5;
+
+  // totais
+  const tot = [[String(visiveis.length), 'ITENS AVALIADOS', [26,29,33]], [String(cont.Conforme + cont.Informativo), 'CONFORMES', VERDE],
+               [String(cont['Não conforme']), 'NÃO CONFORMES', cont['Não conforme'] ? VERM : [26,29,33]], [String(cont['Não se aplica']), 'NÃO APLICÁVEIS', [26,29,33]]];
+  const bw = (CW - 3 * 4) / 4;
+  tot.forEach((t, i) => {
+    const x = ML + i * (bw + 4);
+    const ruim = i === 2 && cont['Não conforme'];
+    doc.setDrawColor(...(ruim ? [243,192,186] : LINHA)); doc.setFillColor(...(ruim ? [253,236,234] : [255,255,255]));
+    doc.roundedRect(x, y, bw, 15, 1.5, 1.5, 'FD');
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(15); doc.setTextColor(...t[2]);
+    doc.text(t[0], x + bw / 2, y + 7.5, {align:'center'});
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(6.5); doc.setTextColor(...CINZA);
+    doc.text(t[1], x + bw / 2, y + 12, {align:'center'});
+  });
+  y += 20;
+
+  // itens (com linhas de seção)
+  const corpo = []; let secao = null;
+  for (const it of visiveis){
+    if (it.secao !== secao){ secao = it.secao; corpo.push([{content: String(secao).toUpperCase(), colSpan: 2, styles: {fillColor: [238,242,247], fontStyle:'bold', fontSize: 7.5, textColor: [75,85,99]}}]); }
+    const r = v.respostas[it.id]; const sit = situacao(it, r); const qtd = qtdFotosItem(v, it.id);
+    let valor = (it.tipo === 'foto') ? (qtd ? `${qtd} foto(s) registrada(s)` : 'Não informado') : (r == null || r === '' ? 'Não informado' : String(r));
+    if (sit === 'Não conforme') valor += '  —  NÃO CONFORME';
+    if (v.obs[it.id]) valor += String.fromCharCode(10) + `Obs.: ${v.obs[it.id]}`;
+    corpo.push([{content: it.pergunta, styles: {fontStyle:'bold', fillColor: VERDE_CL}}, {content: valor, styles: sit === 'Não conforme' ? {textColor: VERM, fontStyle:'bold'} : {}}]);
+  }
+  doc.autoTable({
+    startY: y, margin: {left: ML, right: MR, top: MT, bottom: MB}, body: corpo, theme: 'grid',
+    styles: {font:'helvetica', fontSize: 8.5, cellPadding: 1.8, lineColor: LINHA, lineWidth: 0.2, textColor: [26,29,33], overflow: 'linebreak'},
+    columnStyles: {0: {cellWidth: CW * 0.46}, 1: {cellWidth: CW * 0.54}},
+    rowPageBreak: 'avoid'
+  });
+  y = doc.lastAutoTable.finalY + 6;
+
+  // registro fotográfico
+  const comFotos = visiveis.filter(it => (v.fotos[it.id] || []).length);
+  if (comFotos.length){
+    const fw = (CW - 2 * 3) / 3, fh = fw * 3 / 4;
+    const garantir = alt => { if (y + alt > PH - MB){ doc.addPage(); y = MT; } };
+    garantir(12);
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(...VERDE);
+    doc.text('REGISTRO FOTOGRÁFICO', ML, y); y += 5;
+    for (const it of comFotos){
+      const ids = v.fotos[it.id];
+      garantir(6 + fh);
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); doc.setTextColor(26,29,33);
+      doc.text(doc.splitTextToSize(it.pergunta, CW), ML, y); y += 4.5;
+      for (let i = 0; i < ids.length; i++){
+        const col = i % 3;
+        if (col === 0 && i > 0){ y += fh + 3; }
+        if (col === 0) garantir(fh + 2);
+        const img = await fotoParaPDF(ids[i]);
+        if (img) doc.addImage(img, 'JPEG', ML + col * (fw + 3), y, fw, fh);
+        else { doc.setDrawColor(...LINHA); doc.rect(ML + col * (fw + 3), y, fw, fh); }
+      }
+      y += fh + 6;
+    }
+  }
+
+  // declaração e assinaturas
+  if (y + 40 > PH - MB){ doc.addPage(); y = MT; }
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(85,85,85);
+  const decl = doc.splitTextToSize(`Declaro que o presente relatório registra com exatidão as condições técnicas e operacionais observadas durante a visita no estabelecimento. Emissão: ${emissao}.`, CW);
+  doc.text(decl, ML, y + 4); y += 4 + decl.length * 4 + 16;
+  const aw = (CW - 16) / 2;
+  doc.setDrawColor(51,51,51);
+  doc.line(ML, y, ML + aw, y); doc.line(ML + aw + 16, y, ML + 2 * aw + 16, y);
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(26,29,33);
+  doc.text(v.tecnico, ML, y + 4.5);
+  doc.text(v.matricula ? `Matrícula ${v.matricula}` : ' ', ML + aw + 16, y + 4.5);
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(...CINZA);
+  doc.text('Técnico responsável — Equipe Gerador', ML, y + 8.5);
+  doc.text('Gerente / responsável da loja', ML + aw + 16, y + 8.5);
+
+  const total = doc.getNumberOfPages();
+  for (let p = 1; p <= total; p++){ doc.setPage(p); cabecalho(); rodape(p, total); }
+  return doc.output('blob');
+}
+
+/* compartilhar o PDF (folha de compartilhamento do celular → WhatsApp) */
+async function compartilharPDF(v, blob, nomeArq){
+  const arquivo = new File([blob], `${nomeArq}.pdf`, {type:'application/pdf'});
+  const texto = `Relatório ${v.id} — ${v.loja.cod} ${v.loja.nome || ''} — ${dataBR(v.criadoEm)} — ${v.tecnico}`;
+  if (navigator.share && navigator.canShare && navigator.canShare({files:[arquivo]})){
+    try {
+      await navigator.share({files:[arquivo], title: nomeArq, text: texto});
+      return 'ok';
+    } catch (e) { return e && e.name === 'AbortError' ? 'cancelado' : 'erro'; }
+  }
+  // sem folha de compartilhamento (navegador antigo/computador): abre o WhatsApp com o texto
+  window.open('https://wa.me/?text=' + encodeURIComponent(texto + ' (PDF salvo na pasta Downloads)'), '_blank', 'noopener');
+  return 'texto';
+}
+function baixarBlob(blob, nome){
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = nome;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 60000);
+}
+
 /* ===================== tela: relatório ===================== */
 async function telaRelatorio(){
   telaAtual = 'relatorio';
@@ -1256,6 +1463,8 @@ async function telaRelatorio(){
   for (const it of visiveis) cont[situacao(it, visita.respostas[it.id])]++;
   const avaliados = visiveis.length;
   const loja = encontrarLoja(visita.loja.cod) || visita.loja;
+  const rede = redeDaVisita() || visita.loja.rede;
+  const logo = logoDaRede(rede);
 
   const idsFoto = [];
   for (const it of visiveis) (visita.fotos[it.id] || []).forEach(f => idsFoto.push(f));
@@ -1280,67 +1489,88 @@ async function telaRelatorio(){
     </td></tr>`;
   }
   const emissao = visita.emitidoEm ? `${dataBR(visita.emitidoEm)}, ${horaBR(visita.emitidoEm)}` : '—';
-  const cabRep = `<div class="cab-rep"><img src="logo.png" alt="DMA"><div><b>Relatório de Inspeção de Manutenção</b>
-      <span>${esc(chk.titulo)} · ${esc(visita.loja.cod)} — ${esc(visita.loja.nome || '')} · ${dataBR(visita.criadoEm)}</span></div></div>`;
-  const rodRep = `<div class="rod-rep"><span>Equipe Gerador — Grupo DMA</span><span>Relatório ${esc(visita.id)} · emitido em ${esc(emissao)}</span></div>`;
+  const enviado = !!visita.compartilhadoEm;
+  const avisoTopo = enviado
+    ? `<div class="aviso ok nao-imprime">${ICO.ok} Relatório enviado por WhatsApp em ${dataBR(visita.compartilhadoEm)} ${horaBR(visita.compartilhadoEm).slice(0,5)}. Pode gerar e enviar de novo se precisar.</div>`
+    : `<div class="aviso erro nao-imprime">${ICO.alerta} <strong>Relatório ainda não enviado.</strong> Toque em <strong>Gerar e enviar</strong>: o app salva o PDF, manda os dados para a planilha e abre o WhatsApp para você enviar o arquivo.</div>`;
 
   montarTela({
     titulo: 'Relatório', sub: `${visita.loja.cod} · ${dataBR(visita.criadoEm)}`, voltar: telaRelatorios,
     html: `
-      <div class="aviso nao-imprime">Toque em <strong>Gerar relatório</strong>: os dados são exportados e, em
-      seguida, escolha “Salvar como PDF” na tela de impressão do celular.</div>
+      ${avisoTopo}
       <div id="relatorio">
-      <table class="folha"><thead><tr><td class="topo">${cabRep}</td></tr></thead><tfoot><tr><td class="rodape">${rodRep}</td></tr></tfoot>
-      <tbody><tr><td class="miolo">
-        <div class="rel-cab">
-          <img src="logo.png" alt="DMA" class="rel-logo">
-          <div class="rel-tit">
-            <h3>RELATÓRIO DE INSPEÇÃO DE MANUTENÇÃO</h3>
-            <div class="rsub">${esc(chk.titulo)} · Atendimento Equipe Gerador — Grupo DMA</div>
-          </div>
-          <div class="rel-num"><span>Relatório nº</span><b>${esc(visita.id)}</b></div>
+      <div class="rel-cab">
+        <img src="${logo}" alt="" class="rel-logo">
+        <div class="rel-tit">
+          <h3>RELATÓRIO DE INSPEÇÃO DE MANUTENÇÃO</h3>
+          <div class="rsub">${esc(chk.titulo)} · Atendimento Equipe Gerador — ${esc(nomeDaRede(rede))}</div>
         </div>
-        <div class="rel-2col">
-        <table>
-          <tr><th>Loja</th><td>${esc(visita.loja.cod)} — ${esc(visita.loja.nome || '')}</td></tr>
-          ${visita.loja.endereco ? `<tr><th>Endereço</th><td>${esc(visita.loja.endereco)}</td></tr>` : ''}
-          ${loja.regional ? `<tr><th>Regional</th><td>${esc(loja.regional)}</td></tr>` : ''}
-          ${loja.cnpj ? `<tr><th>CNPJ</th><td>${esc(formatarCNPJ(loja.cnpj))}</td></tr>` : ''}
-        </table>
-        <table>
-          <tr><th>Responsável</th><td>${esc(visita.tecnico)}</td></tr>
-          <tr><th>Data / Hora</th><td>${dataBR(visita.criadoEm)}, ${horaBR(visita.criadoEm)}</td></tr>
-          <tr><th>Geolocalização</th><td>${esc(localTexto(visita.geo))}</td></tr>
-          ${visita.matricula ? `<tr><th>Matrícula do acompanhante</th><td>${esc(visita.matricula)}</td></tr>` : ''}
-        </table>
-        </div>
-        <div class="rel-totais">
-          <div><b>${avaliados}</b><span>itens avaliados</span></div>
-          <div class="ok"><b>${cont.Conforme + cont.Informativo}</b><span>conformes</span></div>
-          <div class="${cont['Não conforme'] ? 'ruim' : ''}"><b>${cont['Não conforme']}</b><span>não conformes</span></div>
-          <div><b>${cont['Não se aplica']}</b><span>não aplicáveis</span></div>
-        </div>
-        <table class="rel-itens">${linhas}</table>
-        <div class="rel-decl">
-          Declaro que o presente relatório registra com exatidão as condições técnicas e operacionais
-          observadas durante a visita no estabelecimento. Emissão: ${esc(emissao)}.
-        </div>
-        <div class="rel-assin">
-          <div><div class="linha"></div><b>${esc(visita.tecnico)}</b><span>Técnico responsável — Equipe Gerador</span></div>
-          <div><div class="linha"></div><b>${visita.matricula ? 'Matrícula ' + esc(visita.matricula) : '&nbsp;'}</b><span>Gerente / responsável da loja</span></div>
-        </div>
-      </td></tr></tbody></table>
+        <div class="rel-num"><span>Relatório nº</span><b>${esc(visita.id)}</b></div>
+      </div>
+      <div class="rel-2col">
+      <table>
+        <tr><th>Loja</th><td>${esc(visita.loja.cod)} — ${esc(visita.loja.nome || '')}</td></tr>
+        ${visita.loja.endereco ? `<tr><th>Endereço</th><td>${esc(visita.loja.endereco)}</td></tr>` : ''}
+        ${loja.regional ? `<tr><th>Regional</th><td>${esc(loja.regional)}</td></tr>` : ''}
+        ${loja.cnpj ? `<tr><th>CNPJ</th><td>${esc(formatarCNPJ(loja.cnpj))}</td></tr>` : ''}
+      </table>
+      <table>
+        <tr><th>Responsável</th><td>${esc(visita.tecnico)}</td></tr>
+        <tr><th>Data / Hora</th><td>${dataBR(visita.criadoEm)}, ${horaBR(visita.criadoEm)}</td></tr>
+        <tr><th>Geolocalização</th><td>${esc(localTexto(visita.geo))}</td></tr>
+        ${visita.matricula ? `<tr><th>Matrícula do acompanhante</th><td>${esc(visita.matricula)}</td></tr>` : ''}
+      </table>
+      </div>
+      <div class="rel-totais">
+        <div><b>${avaliados}</b><span>itens avaliados</span></div>
+        <div class="ok"><b>${cont.Conforme + cont.Informativo}</b><span>conformes</span></div>
+        <div class="${cont['Não conforme'] ? 'ruim' : ''}"><b>${cont['Não conforme']}</b><span>não conformes</span></div>
+        <div><b>${cont['Não se aplica']}</b><span>não aplicáveis</span></div>
+      </div>
+      <table class="rel-itens">${linhas}</table>
+      <div class="rel-decl">
+        Declaro que o presente relatório registra com exatidão as condições técnicas e operacionais
+        observadas durante a visita no estabelecimento. Emissão: ${esc(emissao)}.
+      </div>
+      <div class="rel-assin">
+        <div><div class="linha"></div><b>${esc(visita.tecnico)}</b><span>Técnico responsável — Equipe Gerador</span></div>
+        <div><div class="linha"></div><b>${visita.matricula ? 'Matrícula ' + esc(visita.matricula) : '&nbsp;'}</b><span>Gerente / responsável da loja</span></div>
+      </div>
       </div>`,
-    barra: `<button class="btn" id="bGerar" style="flex:1">${ICO.doc} Gerar relatório</button>`
+    barra: `<button class="btn" id="bGerar" style="flex:1">${ICO.doc} ${enviado ? 'Gerar e enviar de novo' : 'Gerar e enviar relatório'}</button>`
   });
 
-  // o título da página vira o nome sugerido do PDF em "Salvar como PDF"
   const nomeArq = nomeArquivoRelatorio(visita);
   document.title = nomeArq;
-  document.getElementById('bGerar').onclick = () => {
-    exportarJSON(chk, visiveis, nomeArq);
-    document.title = nomeArq;
-    window.print();
+  const bGerar = document.getElementById('bGerar');
+  bGerar.onclick = async () => {
+    bGerar.disabled = true; bGerar.innerHTML = 'Gerando PDF…';
+    let blob;
+    try { blob = await gerarPDF(visita); }
+    catch (e) { bGerar.disabled = false; bGerar.innerHTML = `${ICO.doc} Gerar e enviar relatório`; avisar('Não foi possível gerar o PDF: ' + (e && e.message || e)); return; }
+    baixarBlob(blob, `${nomeArq}.pdf`);       // 1) salva o arquivo no aparelho
+    exportarJSON(chk, visiveis, nomeArq);     //    (e os dados em JSON, como antes)
+    enviarFilaCentral();                      // 2) manda para a planilha o que estiver na fila
+    // 3) envio por WhatsApp: precisa de um toque do técnico (regra do celular), então o botão vira "Enviar"
+    bGerar.disabled = false;
+    bGerar.innerHTML = `${ICO.fone} Enviar pelo WhatsApp`;
+    bGerar.classList.add('destaque');
+    avisar('PDF salvo. Agora toque em "Enviar pelo WhatsApp".', 'ok');
+    bGerar.onclick = async () => {
+      bGerar.disabled = true;
+      const res = await compartilharPDF(visita, blob, nomeArq);
+      bGerar.disabled = false;
+      if (res === 'ok' || res === 'texto'){
+        visita.compartilhadoEm = new Date().toISOString();
+        await salvar();
+        avisar('Relatório enviado.', 'ok');
+        telaRelatorio();
+      } else if (res === 'cancelado'){
+        avisar('Envio cancelado — o relatório continua marcado como não enviado.');
+      } else {
+        avisar('Não foi possível abrir o compartilhamento. O PDF está salvo na pasta Downloads.');
+      }
+    };
   };
 }
 
