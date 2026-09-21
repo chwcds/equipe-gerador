@@ -72,6 +72,8 @@ textarea{min-height:76px;resize:vertical}
 .btn.sec{background:#fff;color:var(--verde);border:1.5px solid var(--verde)}
 .btn.perigo{background:#fff;color:var(--vermelho);border:1.5px solid var(--vermelho)}
 .btn.perigo-cheio{background:var(--vermelho)}
+.btn.destaque{background:#1B8A4A;box-shadow:0 0 0 3px rgba(27,138,74,.25);animation:pulsa 1.2s ease-in-out 3}
+@keyframes pulsa{50%{transform:scale(1.02)}}
 .btn.pq{display:inline-flex;width:auto;padding:9px 14px;font-size:14px;min-height:40px}
 .barra-baixo{position:fixed;left:0;right:0;bottom:0;z-index:20;background:rgba(255,255,255,.97);
   border-top:1px solid var(--linha);padding:10px 14px calc(10px + var(--safe-b));
@@ -164,6 +166,7 @@ input.visor-num.ativo{outline:2px solid var(--verde);outline-offset:-1px;border-
 .pilula{font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:20px;flex:none;text-transform:uppercase}
 .pilula.rascunho{background:var(--ambar-cl);color:var(--ambar)}
 .pilula.pronta{background:var(--verde-cl);color:var(--verde)}
+.pilula.enviar{background:var(--vermelho-cl);color:var(--vermelho)}
 .vazio{text-align:center;color:var(--cinza);padding:34px 16px;font-size:14.5px}
 .vazio .ico-grande{margin-bottom:8px;opacity:.45}
 .vazio .ico-grande .ico{width:44px;height:44px}
@@ -175,6 +178,8 @@ input.visor-num.ativo{outline:2px solid var(--verde);outline-offset:-1px;border-
 .aviso{background:var(--ambar-cl);border:1px solid #F0D9A8;color:#7A5312;padding:11px 13px;
   border-radius:9px;font-size:13.5px;margin-bottom:12px}
 .aviso.erro{background:var(--vermelho-cl);border-color:#F3C0BA;color:#8C2A1E}
+.aviso.ok{background:var(--verde-cl);border-color:#BFD9CC;color:#0E4630}
+.aviso .ico{vertical-align:-4px}
 .geo-cartao .rotulo{margin-bottom:6px}
 .geo-txt{font-size:13px;color:var(--cinza);display:flex;gap:6px;align-items:flex-start;line-height:1.35}
 .geo-txt .ico{margin-top:1px}
@@ -246,6 +251,14 @@ input.visor-num.ativo{outline:2px solid var(--verde);outline-offset:-1px;border-
 #relatorio .rel-assin b{display:block;font-size:12px}
 #relatorio .rel-assin span{font-size:10.5px;color:var(--cinza)}
 #relatorio .cab-rep,#relatorio .rod-rep{display:none}
+#relatorio{overflow-wrap:anywhere}
+@media (max-width:600px){
+  #relatorio{padding:14px}
+  #relatorio .rel-cab{flex-wrap:wrap;gap:10px}
+  #relatorio .rel-num{flex:1 0 100%;text-align:left;display:flex;gap:6px;align-items:baseline}
+  #relatorio .rel-2col{grid-template-columns:1fr}
+  #relatorio .rel-totais{grid-template-columns:repeat(2,1fr)}
+}
 /* folha de impressão: @page sem margem tira o cabeçalho/rodapé do navegador (URL, data, título);
    as margens de cada página vêm do thead/tfoot da tabela .folha, que o Chrome repete em toda página */
 #relatorio table.folha{width:100%;border-collapse:collapse;margin-bottom:0}
@@ -283,6 +296,8 @@ input.visor-num.ativo{outline:2px solid var(--verde);outline-offset:-1px;border-
 <main id="tela"><div class="carregando"><i></i>Abrindo o app…</div></main>
 <div class="barra-baixo oculto" id="barra"><div class="interno" id="barraInterno"></div></div>
 
+<script src="jspdf.umd.min.js"></script>
+<script src="jspdf.plugin.autotable.min.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
