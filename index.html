@@ -26,6 +26,8 @@ body{font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,san
      background:var(--fundo);color:var(--texto);overscroll-behavior-y:contain}
 button,input,select,textarea{font:inherit;color:inherit}
 .oculto{display:none!important}
+.ico{width:18px;height:18px;vertical-align:-4px;flex:none}
+button .ico,a .ico{margin-right:4px}
 
 /* ---------- cabeçalho ---------- */
 header{position:sticky;top:0;z-index:20;background:var(--verde);color:#fff;
@@ -34,45 +36,56 @@ header h1{font-size:16px;margin:0;font-weight:600;flex:1;line-height:1.25;min-wi
 header h1 span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #logo{height:30px;width:auto;border-radius:5px;flex:none;display:block}
 header h1 small{display:block;font-weight:400;font-size:12px;opacity:.85}
-.btn-voltar{background:rgba(255,255,255,.16);border:0;color:#fff;width:34px;height:34px;
-  border-radius:9px;font-size:19px;line-height:1;cursor:pointer;flex:none}
+.btn-voltar{background:rgba(255,255,255,.16);border:0;color:#fff;width:38px;height:38px;
+  border-radius:9px;font-size:22px;line-height:1;cursor:pointer;flex:none;display:flex;align-items:center;justify-content:center}
+.btn-voltar .ico{margin:0}
 #rede{font-size:11px;padding:3px 8px;border-radius:20px;background:rgba(255,255,255,.18);flex:none}
 #rede.off{background:#7A2E22}
 
 main{padding:14px;padding-bottom:calc(96px + var(--safe-b));max-width:760px;margin:0 auto}
+body.com-teclado main{padding-bottom:calc(330px + var(--safe-b))}
+
+/* ---------- abertura ---------- */
+.carregando{text-align:center;color:var(--cinza);padding:60px 16px;font-size:14.5px}
+.carregando i{display:block;width:34px;height:34px;margin:0 auto 14px;border-radius:50%;
+  border:3px solid var(--linha);border-top-color:var(--verde);animation:gira .9s linear infinite}
+@keyframes gira{to{transform:rotate(360deg)}}
 
 /* ---------- blocos ---------- */
 .cartao{background:var(--papel);border:1px solid var(--linha);border-radius:var(--raio);
   padding:14px;margin-bottom:12px;box-shadow:var(--sombra)}
-.cartao.clicavel{cursor:pointer}
-.cartao.clicavel:active{transform:scale(.995)}
 h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--cinza);
    margin:22px 0 10px;font-weight:700}
 h2:first-child{margin-top:4px}
-label.campo{display:block;margin-bottom:14px}
-label.campo > span{display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:5px}
+label.campo,.campo{display:block;margin-bottom:14px}
+label.campo > span,.rotulo{display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:5px}
 input[type=text],input[type=number],input[type=search],select,textarea{
   width:100%;padding:11px 12px;border:1px solid #CBD2D9;border-radius:9px;background:#fff}
 input:focus,select:focus,textarea:focus{outline:2px solid var(--verde);outline-offset:-1px;border-color:var(--verde)}
 textarea{min-height:76px;resize:vertical}
 
 /* ---------- botões ---------- */
-.btn{display:block;width:100%;padding:14px;border:0;border-radius:10px;background:var(--verde);
-  color:#fff;font-weight:600;cursor:pointer;text-align:center;text-decoration:none}
+.btn{display:flex;align-items:center;justify-content:center;width:100%;padding:14px;border:0;border-radius:10px;background:var(--verde);
+  color:#fff;font-weight:600;cursor:pointer;text-align:center;text-decoration:none;min-height:46px}
 .btn:active{background:var(--verde-esc)}
 .btn[disabled]{background:#A8B3BD;cursor:not-allowed}
 .btn.sec{background:#fff;color:var(--verde);border:1.5px solid var(--verde)}
 .btn.perigo{background:#fff;color:var(--vermelho);border:1.5px solid var(--vermelho)}
-.btn.pq{display:inline-block;width:auto;padding:9px 14px;font-size:14px}
+.btn.perigo-cheio{background:var(--vermelho)}
+.btn.pq{display:inline-flex;width:auto;padding:9px 14px;font-size:14px;min-height:40px}
 .barra-baixo{position:fixed;left:0;right:0;bottom:0;z-index:20;background:rgba(255,255,255,.97);
   border-top:1px solid var(--linha);padding:10px 14px calc(10px + var(--safe-b));
   backdrop-filter:blur(8px)}
 .barra-baixo .interno{max-width:760px;margin:0 auto;display:flex;gap:10px}
+.barra-baixo .btn{padding:12px 6px;font-size:15px}
+body.com-teclado .barra-baixo{display:none}
 
 /* ---------- progresso ---------- */
 .progresso{height:5px;background:var(--linha);border-radius:3px;overflow:hidden;margin-bottom:4px}
 .progresso i{display:block;height:100%;background:var(--verde);transition:width .25s}
-.prog-txt{font-size:12px;color:var(--cinza);text-align:center;margin-bottom:8px}
+.prog-txt{font-size:12px;color:var(--cinza);text-align:center;margin-bottom:4px}
+.geo-linha{font-size:12px;color:var(--cinza);text-align:center;margin-bottom:8px}
+.geo-linha .ico{width:14px;height:14px;vertical-align:-3px}
 
 /* ---------- item do checklist ---------- */
 .item{background:var(--papel);border:1px solid var(--linha);border-left:3px solid var(--linha);
@@ -91,48 +104,69 @@ textarea{min-height:76px;resize:vertical}
 
 /* ---------- opções lado a lado ---------- */
 .opcoes{display:flex;flex-wrap:wrap;gap:8px}
-.opcoes button{flex:1 1 auto;min-width:84px;padding:11px 10px;border:1.5px solid #CBD2D9;
-  background:#fff;border-radius:9px;cursor:pointer;font-size:14px;font-weight:500}
+.opcoes button{flex:1 1 auto;min-width:84px;min-height:46px;padding:11px 10px;border:1.5px solid #CBD2D9;
+  background:#fff;border-radius:9px;cursor:pointer;font-size:14px;font-weight:500;line-height:1.25}
 .opcoes button[aria-pressed=true]{background:var(--verde);border-color:var(--verde);color:#fff;font-weight:600}
 .opcoes button.ruim[aria-pressed=true]{background:var(--vermelho);border-color:var(--vermelho)}
 .opcoes button.na[aria-pressed=true]{background:var(--cinza);border-color:var(--cinza)}
+.opcoes.grade{display:grid;grid-template-columns:repeat(3,1fr)}
+.opcoes.grade button{min-width:0;padding:11px 6px;font-size:13.5px}
+.opcoes.coluna{display:grid;grid-template-columns:1fr;gap:7px}
+.opcoes.coluna button{text-align:left;padding:10px 12px;font-size:13.5px;min-height:42px}
 
-/* ---------- teclado numérico simplificado (medições em campo) ---------- */
+/* ---------- teclado numérico único (painel embaixo) ---------- */
 input.visor-num{font-size:21px;font-weight:700;text-align:center;letter-spacing:.02em;
-  background:#FAFBFC;caret-color:transparent;cursor:default}
-.teclado-num{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:9px}
-.teclado-num button{padding:15px 0;border:1.5px solid #CBD2D9;background:#fff;border-radius:9px;
-  cursor:pointer;font-size:19px;font-weight:600;color:var(--texto)}
+  background:#FAFBFC;caret-color:transparent;cursor:pointer}
+input.visor-num.ativo{outline:2px solid var(--verde);outline-offset:-1px;border-color:var(--verde);background:var(--verde-cl)}
+.painel-teclado{position:fixed;left:0;right:0;bottom:0;z-index:30;background:#fff;border-top:1px solid var(--linha);
+  box-shadow:0 -4px 18px rgba(0,0,0,.12);padding:10px 14px calc(12px + var(--safe-b));
+  transform:translateY(105%);transition:transform .18s ease-out}
+.painel-teclado.aberto{transform:none}
+.painel-teclado .pt-cab{max-width:760px;margin:0 auto 8px;display:flex;align-items:center;gap:10px}
+.painel-teclado .pt-cab span{flex:1;min-width:0;font-size:13px;font-weight:600;color:#374151;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.painel-teclado .pt-ok{display:inline-flex;align-items:center;gap:4px;border:0;border-radius:9px;background:var(--verde);color:#fff;
+  font-weight:700;padding:9px 16px;cursor:pointer;min-height:40px}
+.teclado-num{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:760px;margin:0 auto}
+.teclado-num button{padding:13px 0;border:1.5px solid #CBD2D9;background:#fff;border-radius:9px;
+  cursor:pointer;font-size:21px;font-weight:600;color:var(--texto);min-height:52px;display:flex;align-items:center;justify-content:center}
 .teclado-num button:active{background:var(--verde-cl);border-color:var(--verde)}
 .teclado-num button[data-tecla="del"]{color:var(--vermelho)}
+.teclado-num button .ico{width:24px;height:24px;margin:0}
+.teclado-num button[data-tecla="sep"]{grid-column:1/-1;min-height:44px;padding:8px 0;font-size:19px;color:var(--verde)}
+.teclado-num button[data-tecla="sep"] small{font-size:12px;font-weight:500;color:var(--cinza)}
 
 /* ---------- fotos ---------- */
 .fotos{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
-.miniatura{position:relative;width:74px;height:74px;border-radius:9px;overflow:hidden;border:1px solid var(--linha)}
+.miniatura{position:relative;width:78px;height:78px;border-radius:9px;overflow:hidden;border:1px solid var(--linha)}
 .miniatura img{width:100%;height:100%;object-fit:cover;display:block}
-.miniatura button{position:absolute;top:2px;right:2px;width:21px;height:21px;border-radius:50%;
-  border:0;background:rgba(0,0,0,.62);color:#fff;font-size:13px;line-height:1;cursor:pointer;padding:0}
-.add-foto{width:74px;height:74px;border:1.5px dashed #B4BCC5;border-radius:9px;background:#FAFBFC;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+.miniatura button{position:absolute;top:3px;right:3px;width:28px;height:28px;border-radius:50%;
+  border:0;background:rgba(0,0,0,.62);color:#fff;cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center}
+.miniatura button .ico{width:15px;height:15px;margin:0}
+.add-foto{width:78px;height:78px;border:1.5px dashed #B4BCC5;border-radius:9px;background:#FAFBFC;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
   cursor:pointer;color:var(--cinza);font-size:10px;text-align:center;padding:4px}
-.add-foto span:first-child{font-size:19px;line-height:1}
+.add-foto .ico{width:22px;height:22px;margin:0}
 .add-foto.exigida{border-color:var(--ambar);color:var(--ambar);background:var(--ambar-cl)}
 
 /* ---------- listas ---------- */
 .linha-lista{display:flex;align-items:center;gap:11px;padding:13px 14px;background:var(--papel);
   border:1px solid var(--linha);border-radius:var(--raio);margin-bottom:9px;cursor:pointer;box-shadow:var(--sombra)}
+.linha-lista:active{background:var(--verde-cl)}
 .linha-lista .cresce{flex:1;min-width:0}
 .linha-lista .t{font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .linha-lista .s{font-size:12.5px;color:var(--cinza);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.btn-excluir{flex:none;width:31px;height:31px;border-radius:8px;border:1px solid var(--linha);
-  background:#fff;color:var(--cinza);font-size:14px;cursor:pointer;display:flex;
-  align-items:center;justify-content:center}
+.linha-lista .seta{color:var(--cinza);font-size:22px;line-height:1}
+.btn-excluir{flex:none;width:40px;height:40px;border-radius:9px;border:1px solid var(--linha);
+  background:#fff;color:var(--cinza);cursor:pointer;display:flex;align-items:center;justify-content:center}
+.btn-excluir .ico{margin:0}
 .btn-excluir:active{background:var(--vermelho-cl);color:var(--vermelho);border-color:#F3C0BA}
 .pilula{font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:20px;flex:none;text-transform:uppercase}
 .pilula.rascunho{background:var(--ambar-cl);color:var(--ambar)}
 .pilula.pronta{background:var(--verde-cl);color:var(--verde)}
 .vazio{text-align:center;color:var(--cinza);padding:34px 16px;font-size:14.5px}
-.vazio .ico{font-size:40px;margin-bottom:8px;opacity:.45}
+.vazio .ico-grande{margin-bottom:8px;opacity:.45}
+.vazio .ico-grande .ico{width:44px;height:44px}
 .status-central{text-align:center;color:var(--cinza);font-size:12px;padding:14px 12px 4px;line-height:1.5}
 .status-central .versao{margin-top:4px;font-weight:600;color:#4b5563}
 .atalhos{display:flex;gap:10px;margin-bottom:14px}
@@ -141,16 +175,34 @@ input.visor-num{font-size:21px;font-weight:700;text-align:center;letter-spacing:
 .aviso{background:var(--ambar-cl);border:1px solid #F0D9A8;color:#7A5312;padding:11px 13px;
   border-radius:9px;font-size:13.5px;margin-bottom:12px}
 .aviso.erro{background:var(--vermelho-cl);border-color:#F3C0BA;color:#8C2A1E}
-.linha-lista.desabilitada{opacity:.42;filter:grayscale(.3)}
+.geo-cartao .rotulo{margin-bottom:6px}
+.geo-txt{font-size:13px;color:var(--cinza);display:flex;gap:6px;align-items:flex-start;line-height:1.35}
+.geo-txt .ico{margin-top:1px}
+.geo-txt.ok{color:var(--verde)}
+.geo-txt.erro{color:var(--vermelho)}
+.resumo-nums{display:flex;gap:10px;text-align:center}
+.resumo-nums > div{flex:1}
+.resumo-nums b{display:block;font-size:26px;font-weight:700;line-height:1.1}
+.resumo-nums span{font-size:11.5px;color:var(--cinza)}
 
-/* ---------- modal de dados da loja ---------- */
+/* ---------- modais e avisos ---------- */
 .modal-fundo{position:fixed;inset:0;z-index:40;background:rgba(17,20,23,.5);
   display:flex;align-items:flex-end;justify-content:center}
 .modal-caixa{background:var(--papel);border-radius:16px 16px 0 0;padding:18px 16px calc(18px + var(--safe-b));
   width:100%;max-width:760px;max-height:82vh;overflow:auto;box-shadow:0 -2px 18px rgba(0,0,0,.18)}
+.modal-titulo{font-size:17px;font-weight:700;margin-bottom:6px}
+.modal-texto{font-size:14.5px;color:#374151;margin-bottom:16px;line-height:1.45}
+.modal-acoes{display:flex;gap:10px}
+.modal-acoes .btn{flex:1}
 .dado-linha{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--linha)}
 .dado-linha span{color:var(--cinza);font-size:13.5px}
 .dado-linha b{font-size:14px;font-weight:600;text-align:right}
+.toast{position:fixed;left:14px;right:14px;bottom:calc(90px + var(--safe-b));z-index:50;max-width:520px;margin:0 auto;
+  background:#1A1D21;color:#fff;padding:12px 14px;border-radius:10px;font-size:13.5px;display:flex;gap:8px;align-items:flex-start;
+  box-shadow:0 6px 20px rgba(0,0,0,.25);transition:opacity .3s,transform .3s}
+.toast.erro{background:#7A2E22}
+.toast.ok{background:var(--verde-esc)}
+.toast.sumir{opacity:0;transform:translateY(8px);pointer-events:none}
 
 /* ---------- dados técnicos já cadastrados da loja ---------- */
 .item.bloqueado{border-left-color:var(--verde);background:var(--verde-cl)}
@@ -161,18 +213,39 @@ input.visor-num{font-size:21px;font-weight:700;text-align:center;letter-spacing:
   font-size:12.5px;font-weight:600;padding:0 2px 16px;cursor:pointer;text-decoration:underline}
 
 /* ---------- relatório ---------- */
-#relatorio{background:#fff;padding:20px;font-size:13px}
-#relatorio h3{margin:0 0 3px;font-size:17px;color:var(--verde)}
-#relatorio .rsub{color:var(--cinza);font-size:12px;margin-bottom:14px}
-#relatorio table{width:100%;border-collapse:collapse;margin-bottom:14px}
+#relatorio{background:#fff;padding:20px;font-size:13px;color:#1A1D21}
+#relatorio .rel-cab{display:flex;align-items:center;gap:14px;border-bottom:2px solid var(--verde);padding-bottom:10px;margin-bottom:12px}
+#relatorio .rel-logo{height:40px;width:auto;border-radius:4px;flex:none}
+#relatorio .rel-tit{flex:1;min-width:0}
+#relatorio h3{margin:0 0 2px;font-size:16px;color:var(--verde);letter-spacing:.02em}
+#relatorio .rsub{color:var(--cinza);font-size:11.5px}
+#relatorio .rel-num{text-align:right;flex:none}
+#relatorio .rel-num span{display:block;font-size:10px;color:var(--cinza);text-transform:uppercase;letter-spacing:.05em}
+#relatorio .rel-num b{font-size:12px}
+#relatorio .rel-2col{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
+#relatorio table{width:100%;border-collapse:collapse;margin-bottom:12px}
 #relatorio th,#relatorio td{border:1px solid var(--linha);padding:6px 8px;text-align:left;
   vertical-align:top;font-size:12px}
-#relatorio th{background:var(--verde-cl);font-weight:700;width:46%}
+#relatorio th{background:var(--verde-cl);font-weight:700;width:38%}
+#relatorio .rel-itens th{width:46%}
 #relatorio .secao-rel{background:#EEF2F7;font-weight:700;font-size:11px;text-transform:uppercase;
   letter-spacing:.05em;padding:5px 8px;border:1px solid var(--linha);border-bottom:0}
 #relatorio .nc{color:var(--vermelho);font-weight:700}
-#relatorio .fotos-rel{display:flex;flex-wrap:wrap;gap:5px;margin-top:5px}
-#relatorio .fotos-rel img{width:104px;height:104px;object-fit:cover;border:1px solid var(--linha);border-radius:5px}
+#relatorio .rel-totais{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
+#relatorio .rel-totais > div{border:1px solid var(--linha);border-radius:8px;padding:8px 6px;text-align:center}
+#relatorio .rel-totais b{display:block;font-size:20px;line-height:1.1}
+#relatorio .rel-totais span{font-size:10.5px;color:var(--cinza);text-transform:uppercase;letter-spacing:.04em}
+#relatorio .rel-totais .ok b{color:var(--verde)}
+#relatorio .rel-totais .ruim{background:var(--vermelho-cl);border-color:#F3C0BA}
+#relatorio .rel-totais .ruim b{color:var(--vermelho)}
+#relatorio .fotos-rel{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:6px}
+#relatorio .fotos-rel img{width:100%;aspect-ratio:4/3;object-fit:cover;border:1px solid var(--linha);border-radius:5px;display:block}
+#relatorio .rel-decl{margin-top:16px;font-size:11.5px;color:#555;line-height:1.45}
+#relatorio .rel-assin{display:grid;grid-template-columns:1fr 1fr;gap:28px;margin-top:38px}
+#relatorio .rel-assin .linha{border-top:1px solid #333;margin-bottom:5px}
+#relatorio .rel-assin b{display:block;font-size:12px}
+#relatorio .rel-assin span{font-size:10.5px;color:var(--cinza)}
+#relatorio .cab-rep,#relatorio .rod-rep{display:none}
 /* folha de impressão: @page sem margem tira o cabeçalho/rodapé do navegador (URL, data, título);
    as margens de cada página vêm do thead/tfoot da tabela .folha, que o Chrome repete em toda página */
 #relatorio table.folha{width:100%;border-collapse:collapse;margin-bottom:0}
@@ -180,14 +253,21 @@ input.visor-num{font-size:21px;font-weight:700;text-align:center;letter-spacing:
 #relatorio .folha td.miolo{padding:0;border:0;vertical-align:top}
 @media print{
   @page{margin:0}
-  header,.barra-baixo,.nao-imprime{display:none!important}
+  header,.barra-baixo,.nao-imprime,.painel-teclado,.toast{display:none!important}
   body{background:#fff}
   main{padding:0;max-width:none}
-  #relatorio{padding:0}
-  #relatorio .folha td.topo,#relatorio .folha td.rodape{height:12mm}
+  #relatorio{padding:0;font-size:12px}
+  #relatorio .folha td.topo,#relatorio .folha td.rodape{height:14mm;padding:0 12mm}
   #relatorio .folha td.miolo{padding:0 12mm}
+  #relatorio .cab-rep{display:flex;align-items:center;gap:8px;height:14mm;border-bottom:1px solid var(--linha);color:#555;font-size:9.5px}
+  #relatorio .cab-rep img{height:8mm;width:auto;border-radius:3px}
+  #relatorio .cab-rep b{display:block;color:var(--verde);font-size:10.5px}
+  #relatorio .rod-rep{display:flex;justify-content:space-between;align-items:center;height:14mm;border-top:1px solid var(--linha);color:#777;font-size:9px}
+  #relatorio .rel-cab{margin-top:4mm}
   #relatorio table{page-break-inside:auto}
   #relatorio tr{page-break-inside:avoid}
+  #relatorio .rel-assin{page-break-inside:avoid}
+  #relatorio .fotos-rel img{aspect-ratio:4/3}
 }
 </style>
 </head>
@@ -200,7 +280,7 @@ input.visor-num{font-size:21px;font-weight:700;text-align:center;letter-spacing:
   <span id="rede">online</span>
 </header>
 
-<main id="tela"></main>
+<main id="tela"><div class="carregando"><i></i>Abrindo o app…</div></main>
 <div class="barra-baixo oculto" id="barra"><div class="interno" id="barraInterno"></div></div>
 
 <script src="app.js"></script>
