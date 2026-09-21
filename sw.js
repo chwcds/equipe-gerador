@@ -1,9 +1,9 @@
-/* Service worker — deixa o app abrir sem internet.
+/* Service worker — deixa o app abrir sem internet e abrir RÁPIDO com internet fraca.
    Ao publicar uma versão nova, troque o número em CACHE. */
-const CACHE = 'equipe-gerador-v30';
+const CACHE = 'equipe-gerador-v31';
 const ARQUIVOS = [
-  './', './index.html', './app.js', './checklists.json', './manifest.webmanifest',
-  './logo.png', './icon-192.png', './icon-512.png'
+  './', './index.html', './app.js', './checklists.json', './lojas.json', './manifest.webmanifest',
+  './logo.png', './icon-192.png', './icon-512.png', './icon.svg'
 ];
 
 self.addEventListener('install', e => {
@@ -16,20 +16,26 @@ self.addEventListener('activate', e => {
     .then(() => self.clients.claim()));
 });
 
-/* checklists.json: rede primeiro (pega perguntas novas), cache como reserva.
-   Demais arquivos: cache primeiro, com atualização em segundo plano. */
+/* Tudo "cache primeiro": a resposta guardada volta na hora e, em paralelo, a rede
+   atualiza o cache para a próxima abertura. Pedidos com "?atualizar=1" (feitos pelo app
+   em segundo plano) vão direto à rede e gravam no cache do arquivo — assim perguntas e
+   lojas novas entram sem travar a abertura do app. */
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
   const url = new URL(e.request.url);
   if (url.origin !== location.origin) return;
 
-  if (url.pathname.endsWith('checklists.json')) {
+  if (url.searchParams.has('atualizar')) {
+    url.searchParams.delete('atualizar');
+    const limpa = new Request(url.toString());
     e.respondWith(
-      fetch(e.request).then(r => {
-        const copia = r.clone();
-        caches.open(CACHE).then(c => c.put(e.request, copia));
+      fetch(e.request, {cache: 'no-store'}).then(r => {
+        if (r && r.status === 200) {
+          const copia = r.clone();
+          caches.open(CACHE).then(c => c.put(limpa, copia));
+        }
         return r;
-      }).catch(() => caches.match(e.request))
+      }).catch(() => caches.match(limpa))
     );
     return;
   }
