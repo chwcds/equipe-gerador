@@ -1,9 +1,10 @@
 /* Service worker — deixa o app abrir sem internet e abrir RÁPIDO com internet fraca.
    Ao publicar uma versão nova, troque o número em CACHE. */
-const CACHE = 'equipe-gerador-v31';
+const CACHE = 'equipe-gerador-v32';
 const ARQUIVOS = [
   './', './index.html', './app.js', './checklists.json', './lojas.json', './manifest.webmanifest',
-  './logo.png', './icon-192.png', './icon-512.png', './icon.svg'
+  './logo.png', './logo-bh.svg', './icon-192.png', './icon-512.png', './icon.svg',
+  './jspdf.umd.min.js', './jspdf.plugin.autotable.min.js'
 ];
 
 self.addEventListener('install', e => {
