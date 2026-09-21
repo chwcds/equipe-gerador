@@ -27,6 +27,7 @@ const BD = (() => {
       if (req) req.onsuccess = () => { res = req.result; };
       t.oncomplete = () => ok(res);
       t.onerror = () => err(t.error);
+      t.onabort = () => err(t.error || new Error('transação abortada'));
     });
   };
   return {
@@ -43,17 +44,21 @@ const BD = (() => {
 /* ===================== versão =====================
    Mostrada na tela inicial para conferir se o aparelho está com a versão publicada.
    A cada publicação: trocar aqui e no CACHE do sw.js. */
-const VERSAO_APP = '30';
-const DATA_VERSAO = '20/09/2026';
+const VERSAO_APP = '31';
+const DATA_VERSAO = '21/09/2026';
 
 /* ===================== estado ===================== */
-let CFG = null;            // checklists.json
+let CFG = null;            // checklists.json (+ lojas.json)
 let visita = null;         // visita em edição
+let telaAtual = '';        // 'inicio' | 'andamento' | 'relatorios' | 'checklist' | 'revisao' | 'relatorio'
 const urlsFoto = new Map();// id -> objectURL (liberados ao trocar de tela)
 
 const uid = () => (Date.now().toString(36) + Math.random().toString(36).slice(2,8)).toUpperCase();
 const esc = s => String(s==null?'':s).replace(/[&<>"']/g, c =>
   ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+// marcas de acento (U+0300 a U+036F) para tirar acentos de nomes; montado sem sequência de escape
+const ACENTOS = new RegExp('[' + String.fromCharCode(768) + '-' + String.fromCharCode(879) + ']', 'g');
 
 function dataBR(iso){
   const d = new Date(iso);
@@ -64,6 +69,23 @@ function horaBR(iso){
   const d = new Date(iso), p = n => String(n).padStart(2,'0');
   return `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
 }
+
+/* ===================== ícones (SVG inline) =====================
+   Emojis mudam de desenho conforme a marca do celular; SVG fica igual em todos. */
+const svg = d => `<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+const ICO = {
+  camera: svg('<path d="M4 8h3l2-3h6l2 3h3a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2z"/><circle cx="12" cy="14" r="3.5"/>'),
+  pino:   svg('<path d="M12 22s7-6.2 7-12a7 7 0 0 0-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/>'),
+  mapa:   svg('<path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/>'),
+  fone:   svg('<path d="M5 3h4l2 5-2.5 1.5a11 11 0 0 0 6 6L16 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 5a2 2 0 0 1 2-2z"/>'),
+  lixo:   svg('<path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/><path d="M10 10v6M14 10v6"/>'),
+  ok:     svg('<path d="M20 6L9 17l-5-5"/>'),
+  doc:    svg('<path d="M6 2h8l6 6v14H6z"/><path d="M14 2v6h6M9 13h6M9 17h6"/>'),
+  fechar: svg('<path d="M18 6L6 18M6 6l12 12"/>'),
+  gps:    svg('<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="8"/>'),
+  alerta: svg('<path d="M12 3l10 18H2z"/><path d="M12 10v4M12 17.5v.5"/>'),
+  apagar: svg('<path d="M20 6H9l-6 6 6 6h11a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1z"/><path d="M17 9l-6 6M11 9l6 6"/>'),
+};
 
 /* opção "Outro": o técnico digita o nome; a resposta gravada é o texto digitado
    (e não a palavra "Outro"), assim o PDF e o cadastro da loja recebem o nome real */
@@ -85,9 +107,10 @@ function redeDaVisita(v){
 function fotosDispensadas(rede){ return rede != null && rede !== 'Supermercados BH'; }
 
 /* ===================== regra de conformidade =====================
-   Mesma regra conferida contra os 33 relatórios em PDF:
-   perguntas numeradas de Sim/Não são conformidade; em "Existe vestígio..."
-   e "possui vazamentos...", o "Sim" é que é a não conformidade. */
+   Perguntas numeradas (ou com prioridade) de Sim/Não são conformidade.
+   Nas perguntas marcadas com "invertido" no checklists.json (ex.: "Existe vestígio
+   de insetos?", "Possui vazamentos?"), o "Sim" é que é a não conformidade — a mesma
+   marcação que pinta o botão "Sim" de vermelho na tela. */
 function situacao(item, resp){
   if (resp == null || resp === '') return 'Pendente';
   const r = String(resp).trim().toLowerCase();
@@ -99,9 +122,8 @@ function situacao(item, resp){
   const criticavel = numerada || item.prioridade;   // itens da preventiva não são numerados mas têm prioridade
   if (!criticavel) return 'Informativo';
   if (p.includes('nível de combustível') || p.includes('corrente fase')) return 'Informativo';
-  const negativa = p.includes('existe vestígio') || p.includes('possui vazamentos');
   const sim = (r === 'sim');
-  if (negativa) return sim ? 'Não conforme' : 'Conforme';
+  if (item.invertido) return sim ? 'Não conforme' : 'Conforme';
   return sim ? 'Conforme' : 'Não conforme';
 }
 
@@ -152,13 +174,14 @@ function itensDoChecklist(chk, v){
 }
 
 /* ===================== base central (planilha Google via Apps Script) =====================
-   O cadastro técnico e as lojas novas cadastradas em campo são compartilhados entre
-   todos os aparelhos por uma planilha Google ("Equipe Gerador - Cadastro de Lojas",
-   conta chwcds). Ordem de precedência ao montar a loja em memória:
-     checklists.json  <  cópia local da base central  <  envios ainda pendentes deste aparelho.
+   O cadastro técnico e os relatórios finalizados são compartilhados entre todos os
+   aparelhos por uma planilha Google ("Equipe Gerador - Cadastro de Lojas", conta chwcds).
+   Ordem de precedência ao montar a loja em memória:
+     lojas.json  <  cópia local da base central  <  envios ainda pendentes deste aparelho.
    Tudo funciona offline: o que o técnico preenche entra numa fila e é enviado quando
    houver internet; a última cópia baixada da base central fica guardada no aparelho. */
 const BASE_CENTRAL_URL = 'https://script.google.com/macros/s/AKfycbyMbRFI4qbTCtICWeC4xZdtVly9SIvNnlmoZ5pcbMpKSbuQdhAgQP0WldnXxFry89g2/exec';
+const MAX_TENTATIVAS_ENVIO = 10;   // envios recusados pela planilha param de ser tentados (ficam registrados)
 const lerLS = (k, padrao) => { try { return JSON.parse(localStorage.getItem(k)) ?? padrao; } catch (e) { return padrao; } };
 const gravarLS = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
 const central = { cache: null, ultimaSync: null, enviando: false, erro: null };
@@ -170,9 +193,9 @@ function aplicarDadosTecnicos(chave, dados){
   l.dadosTecnicos = l.dadosTecnicos || {};
   l.dadosTecnicos[bloco] = Object.assign({}, l.dadosTecnicos[bloco] || {}, dados);
 }
-/* recompõe CFG.lojas a partir do checklists.json puro + base central + fila pendente.
+/* recompõe CFG.lojas a partir do lojas.json puro + base central + fila pendente.
    A lista de lojas é só a do banco de dados: o técnico não cadastra loja em campo
-   (inclusão de loja nova é feita pelo back-end, no checklists.json). */
+   (inclusão de loja nova é feita pelo back-end, no lojas.json). */
 function aplicarExtrasLocais(){
   if (CFG._lojasBase) CFG.lojas = JSON.parse(CFG._lojasBase);
   else CFG._lojasBase = JSON.stringify(CFG.lojas);
@@ -199,44 +222,74 @@ function migrarExtrasAntigos(){
   gravarLS('filaCentral', fila);
   localStorage.setItem('extrasMigrados', '1');
 }
+const chaveFila = it => `${it.tipo}|${it.cod}|${it.bloco || ''}`;
 /* entra na fila (substituindo item igual) e tenta enviar */
 function enfileirarCentral(item){
   const fila = lerLS('filaCentral', []);
-  const chave = it => `${it.tipo}|${it.cod}|${it.bloco || ''}`;
-  const i = fila.findIndex(it => chave(it) === chave(item));
+  const i = fila.findIndex(it => chaveFila(it) === chaveFila(item));
   if (i >= 0) fila[i] = item; else fila.push(item);
   gravarLS('filaCentral', fila);
   atualizarStatusCentral();
   clearTimeout(enfileirarCentral._t);
   enfileirarCentral._t = setTimeout(enviarFilaCentral, 1500);
 }
+function atualizarItemFila(item){
+  const fila = lerLS('filaCentral', []);
+  const i = fila.findIndex(it => chaveFila(it) === chaveFila(item) && it.criadoEm === item.criadoEm);
+  if (i >= 0){ fila[i] = item; gravarLS('filaCentral', fila); }
+}
+function removerDaFila(item){
+  const fila = lerLS('filaCentral', []).filter(it => !(chaveFila(it) === chaveFila(item) && it.criadoEm === item.criadoEm));
+  gravarLS('filaCentral', fila);
+}
+/* Envia UM item por vez: se a planilha recusar um relatório, os demais não ficam presos
+   atrás dele. Falha de rede interrompe e tenta tudo de novo depois; recusa da planilha
+   conta uma tentativa no item e segue para o próximo. */
 async function enviarFilaCentral(){
   const fila = lerLS('filaCentral', []);
   if (!fila.length || central.enviando || !navigator.onLine) return;
   central.enviando = true; central.erro = null; atualizarStatusCentral();
   try {
-    const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 30000);
-    const r = await fetch(BASE_CENTRAL_URL, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body: JSON.stringify({lote: fila}), signal: ctl.signal});
-    clearTimeout(t);
-    const j = await r.json();
-    if (!j.ok) throw new Error(j.erro || 'resposta inválida');
-    // enviados: saem da fila e passam a valer pela cópia local da base central
-    const restante = lerLS('filaCentral', []).filter(it => !fila.some(f => f.tipo === it.tipo && f.cod === it.cod && (f.bloco||'') === (it.bloco||'') && f.criadoEm === it.criadoEm));
-    gravarLS('filaCentral', restante);
-    const cache = central.cache || {dadosTecnicos:{}};
-    for (const it of fila){
-      if (it.tipo !== 'dadosTecnicos') continue;
-      const k = `${it.cod}|${it.bloco}`;
-      cache.dadosTecnicos[k] = Object.assign({}, cache.dadosTecnicos[k] || {}, it.dados);
+    for (const item of fila){
+      if ((item.tentativas || 0) >= MAX_TENTATIVAS_ENVIO) continue;
+      let r;
+      try {
+        const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 30000);
+        r = await fetch(BASE_CENTRAL_URL, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+          body: JSON.stringify({lote: [item]}), signal: ctl.signal});
+        clearTimeout(t);
+      } catch (e) {
+        central.erro = 'sem conexão com a base central';
+        break;                                   // sem rede: para aqui e tenta tudo de novo depois
+      }
+      let j = null;
+      try { j = await r.json(); } catch (e) {}
+      if (!j || !j.ok){
+        item.tentativas = (item.tentativas || 0) + 1;
+        item.ultimoErro = (j && j.erro) ? String(j.erro) : `resposta inválida (HTTP ${r.status})`;
+        atualizarItemFila(item);
+        continue;
+      }
+      removerDaFila(item);                       // enviado: sai da fila
+      if (item.tipo === 'dadosTecnicos'){
+        const cache = central.cache || {dadosTecnicos:{}};
+        const k = `${item.cod}|${item.bloco}`;
+        cache.dadosTecnicos[k] = Object.assign({}, cache.dadosTecnicos[k] || {}, item.dados);
+        central.cache = cache; gravarLS('baseCentralCache', cache);
+      }
+      if (item.tipo === 'relatorio') await marcarRelatorioEnviado(item.cod);
     }
-    central.cache = cache; gravarLS('baseCentralCache', cache);
     localStorage.removeItem('lojasExtras'); localStorage.removeItem('dadosTecnicosExtras');
-  } catch (e) {
-    central.erro = 'sem conexão com a base central';
   } finally {
     central.enviando = false; atualizarStatusCentral();
   }
+}
+async function marcarRelatorioEnviado(id){
+  try {
+    const v = await BD.lerVisita(id);
+    if (v && !v.enviadoEm){ v.enviadoEm = new Date().toISOString(); await BD.salvarVisita(v); }
+    if (visita && visita.id === id && v) visita.enviadoEm = v.enviadoEm;
+  } catch (e) {}
 }
 /* baixa a base central inteira (ao abrir o app e ao voltar a rede) */
 async function baixarBaseCentral(){
@@ -264,12 +317,15 @@ async function sincronizarCentral(){
   await baixarBaseCentral();   // o cadastro baixado já vale para a próxima loja escolhida na tela inicial
 }
 function textoStatusCentral(){
-  const pend = lerLS('filaCentral', []).length;
-  if (central.enviando) return 'Enviando cadastro para a base central…';
+  const fila = lerLS('filaCentral', []);
+  const recusados = fila.filter(it => (it.tentativas || 0) >= MAX_TENTATIVAS_ENVIO).length;
+  const pend = fila.length - recusados;
+  if (central.enviando) return 'Enviando para a base central…';
   const partes = [];
   if (central.ultimaSync) partes.push(`Base de lojas atualizada em ${dataBR(central.ultimaSync)} ${horaBR(central.ultimaSync).slice(0,5)}`);
   else partes.push('Base de lojas ainda não baixada');
-  if (pend) partes.push(`${pend} cadastro${pend>1?'s':''} aguardando envio`);
+  if (pend) partes.push(`${pend} envio${pend>1?'s':''} aguardando internet`);
+  if (recusados) partes.push(`${recusados} envio${recusados>1?'s':''} recusado${recusados>1?'s':''} pela planilha`);
   if (central.erro) partes.push(central.erro);
   return partes.join(' · ');
 }
@@ -349,22 +405,73 @@ function pendencias(chk, v){
   return faltando;
 }
 
-/* ===================== geolocalização ===================== */
-function pegarLocal(){
-  return new Promise(ok => {
-    if (!navigator.geolocation) return ok({erro:'Aparelho sem GPS disponível'});
-    navigator.geolocation.getCurrentPosition(
-      pos => ok({lat: +pos.coords.latitude.toFixed(6), lon: +pos.coords.longitude.toFixed(6),
-                 precisao: Math.round(pos.coords.accuracy), em: new Date().toISOString()}),
-      e   => ok({erro: e.code === 1 ? 'Permissão de localização negada'
-                      : e.code === 3 ? 'Tempo esgotado ao obter o GPS'
-                      : 'Não foi possível obter a localização'}),
-      {enableHighAccuracy:true, timeout:15000, maximumAge:0});
-  });
+/* ===================== geolocalização =====================
+   Tenta primeiro com alta precisão (GPS); se demorar ou falhar, tenta de novo aceitando
+   precisão menor (torres/wi-fi) — dentro da sala do gerador o GPS puro costuma não pegar. */
+function pedirPosicao(opts){
+  return new Promise(ok => navigator.geolocation.getCurrentPosition(
+    pos => ok({lat: +pos.coords.latitude.toFixed(6), lon: +pos.coords.longitude.toFixed(6),
+               precisao: Math.round(pos.coords.accuracy), em: new Date().toISOString()}),
+    e   => ok({erro: e.code === 1 ? 'Permissão de localização negada'
+                    : e.code === 3 ? 'Tempo esgotado ao obter o GPS'
+                    : 'Não foi possível obter a localização', codigo: e.code}),
+    opts));
 }
-const localTexto = g => !g ? '—'
+async function pegarLocal(){
+  if (!navigator.geolocation) return {erro:'Aparelho sem GPS disponível'};
+  let g = await pedirPosicao({enableHighAccuracy:true, timeout:15000, maximumAge:0});
+  if (g.erro && g.codigo !== 1) g = await pedirPosicao({enableHighAccuracy:false, timeout:10000, maximumAge:60000});
+  return g;
+}
+const geoOk = g => !!(g && !g.erro);
+const localTexto = g => !g ? 'Localização ainda não obtida'
   : g.erro ? g.erro
   : `Lat: ${g.lat}, Long: ${g.lon} (Precisão: ${g.precisao}m)`;
+/* a visita pode começar sem GPS: continua procurando em segundo plano e grava quando achar */
+async function completarGeoDaVisita(id){
+  const g = await pegarLocal();
+  if (g.erro) return;
+  if (visita && visita.id === id){ visita.geo = g; await salvar(); pintarGeoNaTela(); return; }
+  try { const v = await BD.lerVisita(id); if (v && (!v.geo || v.geo.erro)){ v.geo = g; await BD.salvarVisita(v); } } catch (e) {}
+}
+function pintarGeoNaTela(){
+  const el = document.getElementById('geoVisita');
+  if (el) el.innerHTML = geoOk(visita && visita.geo) ? `${ICO.gps} Localização registrada` : `${ICO.gps} Obtendo localização…`;
+}
+
+/* ===================== avisos e confirmações (no lugar das caixas do navegador) ===================== */
+function confirmar(msg, {ok = 'Confirmar', cancelar = 'Voltar', perigo = false, titulo = ''} = {}){
+  return new Promise(res => {
+    document.getElementById('modalConfirma')?.remove();
+    const div = document.createElement('div');
+    div.id = 'modalConfirma'; div.className = 'modal-fundo';
+    div.innerHTML = `<div class="modal-caixa" role="dialog" aria-modal="true">
+      ${titulo ? `<div class="modal-titulo">${esc(titulo)}</div>` : ''}
+      <div class="modal-texto">${esc(msg)}</div>
+      <div class="modal-acoes">
+        <button type="button" class="btn sec" id="mcCancela">${esc(cancelar)}</button>
+        <button type="button" class="btn ${perigo ? 'perigo-cheio' : ''}" id="mcOk">${esc(ok)}</button>
+      </div></div>`;
+    document.body.appendChild(div);
+    const fechar = r => { div.remove(); res(r); };
+    div.querySelector('#mcOk').onclick = () => fechar(true);
+    div.querySelector('#mcCancela').onclick = () => fechar(false);
+    div.addEventListener('click', e => { if (e.target === div) fechar(false); });
+  });
+}
+function avisar(msg, tipo = 'erro'){
+  let t = document.getElementById('toast');
+  if (!t){ t = document.createElement('div'); t.id = 'toast'; document.body.appendChild(t); }
+  t.className = `toast ${tipo}`; t.innerHTML = `${tipo === 'erro' ? ICO.alerta : ICO.ok} <span>${esc(msg)}</span>`;
+  clearTimeout(avisar._t);
+  avisar._t = setTimeout(() => t.classList.add('sumir'), 3500);
+}
+/* grava a visita em edição; se o aparelho recusar (sem espaço, modo anônimo), avisa em vez de perder em silêncio */
+async function salvar(){
+  if (!visita) return;
+  try { await BD.salvarVisita(visita); }
+  catch (e) { avisar('Não foi possível salvar no aparelho. Verifique o espaço livre do celular.'); }
+}
 
 /* ===================== dados da loja (modal) ===================== */
 const TEL_CEMIG = '08007232827';
@@ -389,14 +496,14 @@ function abrirDadosLoja(loja){
         <div style="flex:1;min-width:0">
           <div style="font-weight:700;font-size:16px">${esc(loja.cod)} — ${esc(loja.nome)}</div>
         </div>
-        <button type="button" class="btn-voltar" id="bFecharDadosLoja" style="background:var(--fundo);color:var(--texto)">✕</button>
+        <button type="button" class="btn-voltar" id="bFecharDadosLoja" style="background:var(--fundo);color:var(--texto)" aria-label="Fechar">${ICO.fechar}</button>
       </div>
       ${linha('Endereço', loja.endereco || 'Endereço não cadastrado.')}
-      ${mapaUrl ? `<a class="btn sec pq" href="${mapaUrl}" target="_blank" rel="noopener" style="margin:2px 0 12px">🗺️ Abrir no mapa</a>` : ''}
+      ${mapaUrl ? `<a class="btn sec pq" href="${mapaUrl}" target="_blank" rel="noopener" style="margin:2px 0 12px">${ICO.mapa} Abrir no mapa</a>` : ''}
       ${linha('Regional', loja.regional)}
       ${linha('CNPJ', formatarCNPJ(loja.cnpj))}
       ${linha('Unidade consumidora', loja.unidade_consumidora)}
-      ${loja.uf === 'MG' ? `<a class="btn pq" href="tel:${TEL_CEMIG}" style="margin-top:6px">📞 Ligar para a Cemig</a>` : ''}
+      ${loja.uf === 'MG' ? `<a class="btn pq" href="tel:${TEL_CEMIG}" style="margin-top:6px">${ICO.fone} Ligar para a Cemig</a>` : ''}
     </div>`;
   document.body.appendChild(div);
   div.addEventListener('click', e => { if (e.target === div) fecharDadosLoja(); });
@@ -417,7 +524,7 @@ async function comprimir(file){
 }
 async function urlFoto(id){
   if (urlsFoto.has(id)) return urlsFoto.get(id);
-  const reg = await BD.lerFoto(id);
+  const reg = await BD.lerFoto(id).catch(() => null);
   if (!reg) return '';
   const u = URL.createObjectURL(reg.blob);
   urlsFoto.set(id, u);
@@ -427,6 +534,28 @@ function liberarUrls(){
   for (const u of urlsFoto.values()) URL.revokeObjectURL(u);
   urlsFoto.clear();
 }
+/* Fotos de relatórios antigos já enviados à planilha são apagadas do aparelho depois de
+   DIAS_GUARDAR_FOTOS dias, para o celular não encher. O relatório continua no aparelho
+   (texto e quantidade de fotos); o PDF gerado na época é o registro com as imagens. */
+const DIAS_GUARDAR_FOTOS = 60;
+async function limparFotosAntigas(){
+  try {
+    const limite = Date.now() - DIAS_GUARDAR_FOTOS * 86400000;
+    const vs = await BD.listarVisitas();
+    for (const v of vs){
+      if (!v.finalizada || !v.enviadoEm || v.fotosApagadasEm) continue;
+      if (new Date(v.enviadoEm).getTime() > limite) continue;
+      const qtd = {};
+      for (const [itemId, ids] of Object.entries(v.fotos || {})){
+        qtd[itemId] = ids.length;
+        for (const fid of ids) await BD.apagarFoto(fid).catch(() => {});
+      }
+      v.qtdFotosApagadas = qtd; v.fotos = {}; v.fotosApagadasEm = new Date().toISOString();
+      await BD.salvarVisita(v);
+    }
+  } catch (e) {}
+}
+const qtdFotosItem = (v, itemId) => (v.fotos[itemId] || []).length || ((v.qtdFotosApagadas || {})[itemId] || 0);
 
 /* ===================== navegação ===================== */
 const $tela = document.getElementById('tela');
@@ -445,7 +574,7 @@ const TITULO_APP = document.title;
 function nomeArquivoRelatorio(v){
   const d = new Date(v.criadoEm), p = n => String(n).padStart(2,'0');
   const data = `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
-  const tec = String(v.tecnico || '').normalize('NFD').replace(/[̀-ͯ]/g, '')
+  const tec = String(v.tecnico || '').normalize('NFD').replace(ACENTOS, '')
     .toUpperCase().replace(/[^A-Z0-9 ]/g, ' ').split(/\s+/).filter(Boolean).slice(0, 2).join('_');
   const cod = String(v.loja?.cod || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
   const chkNome = String(v.checklist || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
@@ -460,6 +589,8 @@ function montarTela({titulo, sub, voltar, html, barra}){
   $tela.innerHTML = html;
   if (barra){ $barraInt.innerHTML = barra; $barra.classList.remove('oculto'); }
   else $barra.classList.add('oculto');
+  fecharTeclado();
+  document.getElementById('toast')?.classList.add('sumir');
   window.scrollTo(0,0);
 }
 $voltar.onclick = () => { if (voltarPara) voltarPara(); };
@@ -472,7 +603,7 @@ function linhaVisita(v){
   const chk = CFG.checklists.find(c => c.id === v.checklist);
   const nc = v.finalizada ? contarNC(chk, v) : 0;
   const excluir = !v.finalizada
-    ? `<button type="button" class="btn-excluir" data-excluir="${esc(v.id)}" aria-label="Excluir" title="Excluir">🗑</button>`
+    ? `<button type="button" class="btn-excluir" data-excluir="${esc(v.id)}" aria-label="Excluir" title="Excluir">${ICO.lixo}</button>`
     : '';
   return `<div class="linha-lista" data-abrir="${v.id}">
     <div class="cresce">
@@ -495,7 +626,9 @@ function ligarListaVisitas(recarregar){
     btn.onclick = async (e) => {
       e.stopPropagation();
       const id = btn.dataset.excluir;
-      if (!confirm('Excluir esta visita em andamento? As respostas e fotos dela serão apagadas e isso não pode ser desfeito.')) return;
+      const sim = await confirmar('As respostas e fotos desta visita serão apagadas do aparelho. Isso não pode ser desfeito.',
+        {titulo:'Excluir visita em andamento?', ok:'Excluir', perigo:true});
+      if (!sim) return;
       await apagarVisitaCompleta(id);
       recarregar();
     };
@@ -506,11 +639,12 @@ async function apagarVisitaCompleta(id){
   const v = await BD.lerVisita(id);
   if (v){
     const idsFoto = Object.values(v.fotos || {}).flat();
-    for (const fid of idsFoto) await BD.apagarFoto(fid);
+    for (const fid of idsFoto) await BD.apagarFoto(fid).catch(() => {});
   }
   await BD.apagarVisita(id);
 }
 async function telaEmAndamento(){
+  telaAtual = 'andamento';
   visita = null;
   liberarUrls();
   const vs = (await BD.listarVisitas()).filter(v => !v.finalizada).sort((a,b) => b.criadoEm.localeCompare(a.criadoEm));
@@ -518,11 +652,12 @@ async function telaEmAndamento(){
     titulo: 'Em andamento', sub: `${vs.length} visita${vs.length === 1 ? '' : 's'} para continuar`, voltar: telaInicio,
     html: vs.length
       ? `<div class="aviso">Toque na visita para continuar de onde parou. Tudo que foi respondido está guardado.</div>${vs.map(linhaVisita).join('')}`
-      : `<div class="vazio"><div class="ico">✅</div>Nenhuma visita em andamento.</div>`
+      : `<div class="vazio"><div class="ico-grande">${ICO.ok}</div>Nenhuma visita em andamento.</div>`
   });
   ligarListaVisitas(telaEmAndamento);
 }
 async function telaRelatorios(){
+  telaAtual = 'relatorios';
   visita = null;
   liberarUrls();
   const vs = (await BD.listarVisitas()).filter(v => v.finalizada).sort((a,b) => b.criadoEm.localeCompare(a.criadoEm));
@@ -530,25 +665,26 @@ async function telaRelatorios(){
     titulo: 'Relatórios', sub: `${vs.length} relatório${vs.length === 1 ? '' : 's'} gerado${vs.length === 1 ? '' : 's'} neste aparelho`, voltar: telaInicio,
     html: vs.length
       ? vs.map(linhaVisita).join('')
-      : `<div class="vazio"><div class="ico">📄</div>Nenhum relatório gerado ainda.</div>`
+      : `<div class="vazio"><div class="ico-grande">${ICO.doc}</div>Nenhum relatório gerado ainda.</div>`
   });
   ligarListaVisitas(telaRelatorios);
 }
 
 function contarNC(chk, v){
   if (!chk) return 0;
-  return chk.itens.filter(it => visivel(it, v.respostas) &&
+  return itensDoChecklist(chk, v).filter(it => visivel(it, v.respostas) &&
     situacao(it, v.respostas[it.id]) === 'Não conforme').length;
 }
 
 /* ===================== tela: início (técnico, rede, loja, checklist) ===================== */
 async function telaInicio(){
+  telaAtual = 'inicio';
   visita = null;
   liberarUrls();
   const ultimoTec = localStorage.getItem('ultimoTecnico') || '';
   const ultimaRede = localStorage.getItem('ultimaRede') || 'Supermercados BH';
   const redes = ['Supermercados BH', 'DMA'];
-  const todas = await BD.listarVisitas();
+  const todas = await BD.listarVisitas().catch(() => []);
   const nAndamento = todas.filter(v => !v.finalizada).length, nRelatorios = todas.filter(v => v.finalizada).length;
 
   montarTela({
@@ -559,15 +695,14 @@ async function telaInicio(){
       <button type="button" class="btn sec" id="bRelatorios">Relatórios${nRelatorios ? ` <b>${nRelatorios}</b>` : ''}</button>
     </div>
     <div class="cartao">
-      <label class="campo"><span>Técnico responsável</span>
-        <select id="fTec">
-          <option value="">Selecione…</option>
+      <div class="campo"><span class="rotulo">Técnico responsável</span>
+        <div class="opcoes coluna" id="fTec">
           ${(CFG.tecnicos || []).map(t =>
-            `<option value="${esc(t)}" ${t === ultimoTec ? 'selected' : ''}>${esc(t)}</option>`).join('')}
-        </select>
-      </label>
+            `<button type="button" data-tec="${esc(t)}" aria-pressed="${t === ultimoTec ? 'true' : 'false'}">${esc(t)}</button>`).join('')}
+        </div>
+      </div>
 
-      <div class="campo" style="margin-bottom:14px"><span style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:5px">Rede que está atendendo</span>
+      <div class="campo"><span class="rotulo">Rede que está atendendo</span>
         <div class="opcoes" id="fRede">
           ${redes.map(r =>
             `<button type="button" data-rede="${esc(r)}" aria-pressed="${r === ultimaRede ? 'true' : 'false'}">${esc(r)}</button>`).join('')}
@@ -582,42 +717,44 @@ async function telaInicio(){
         </select>
       </label>
       <div id="lojaInfo" class="s" style="font-size:12.5px;color:var(--cinza);margin:-8px 0 6px"></div>
-      <button type="button" class="btn sec pq oculto" id="bDadosLoja" style="margin-bottom:10px">📍 Ver dados da loja</button>
+      <button type="button" class="btn sec pq oculto" id="bDadosLoja" style="margin-bottom:10px">${ICO.pino} Ver dados da loja</button>
 
       <label class="campo" style="margin-top:14px"><span>Matrícula do gerente que acompanhou</span>
         <input type="number" id="fMat" inputmode="numeric" placeholder="Ex.: 653335"></label>
     </div>
 
-    <div class="cartao">
-      <div style="font-size:13px;font-weight:600;color:#374151;margin-bottom:6px">Localização da visita (obrigatória)</div>
-      <div id="geo" style="font-size:13px;color:var(--cinza)">Obtendo GPS…</div>
+    <div class="cartao geo-cartao">
+      <div class="rotulo">Localização da visita</div>
+      <div id="geo" class="geo-txt">${ICO.gps} Obtendo GPS…</div>
       <button class="btn sec pq oculto" id="bGeo" style="margin-top:9px">Tentar novamente</button>
     </div>
 
     <h2>Qual checklist?</h2>
     <div id="listaChecklists">
     ${CFG.checklists.map(c => `
-      <div class="linha-lista desabilitada" data-chk="${c.id}">
+      <div class="linha-lista" data-chk="${c.id}">
         <div class="cresce"><div class="t">${esc(c.titulo)}</div>
         <div class="s" data-resumo="${c.id}"></div></div>
-        <span style="color:var(--cinza);font-size:20px">›</span>
+        <span class="seta">›</span>
       </div>`).join('')}
     </div>
     <div id="erroNova"></div>
     <div class="status-central"><div id="statusCentral">${esc(textoStatusCentral())}</div>
-      <div class="versao">Equipe Gerador — versão ${esc(VERSAO_APP)} (${esc(DATA_VERSAO)}) · base de lojas ${esc(CFG.versao || '')}</div></div>`
+      <div class="versao">Equipe Gerador — versão ${esc(VERSAO_APP)} (${esc(DATA_VERSAO)}) · base de lojas ${esc(CFG.versaoLojas || CFG.versao || '')}</div></div>`
   });
   document.getElementById('bAndamento').onclick = telaEmAndamento;
   document.getElementById('bRelatorios').onclick = telaRelatorios;
 
-  const $tec = document.getElementById('fTec');
+  const $tecBox = document.getElementById('fTec');
   const $redeBox = document.getElementById('fRede');
-  // botões (não lista suspensa): $rede.value devolve a rede marcada
-  const $rede = { get value(){ return $redeBox.querySelector('button[aria-pressed="true"]')?.dataset.rede || ''; } };
+  // botões (não lista suspensa): .value devolve a opção marcada
+  const marcado = (box, attr) => box.querySelector('button[aria-pressed="true"]')?.dataset[attr] || '';
+  const $tec  = { get value(){ return marcado($tecBox, 'tec'); } };
+  const $rede = { get value(){ return marcado($redeBox, 'rede'); } };
   const $loja = document.getElementById('fLoja'), $info = document.getElementById('lojaInfo');
   const $bDadosLoja = document.getElementById('bDadosLoja');
   const $lista = document.getElementById('listaChecklists');
-  let geo = null, geoOk = false;
+  let geo = null, buscandoGeo = false;
 
   const atualizarInfoLoja = () => {
     const l = encontrarLoja($loja.value);
@@ -636,7 +773,7 @@ async function telaInicio(){
     });
   };
   const $busca = document.getElementById('fBuscaLoja');
-  const normalizar = t => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().trim();
+  const normalizar = t => String(t || '').normalize('NFD').replace(ACENTOS, '').toUpperCase().trim();
   const numCod = c => { const n = parseInt(String(c).replace(/\D/g, ''), 10); return isNaN(n) ? Infinity : n; };
   // lista em ordem de código (D002, D003, ... / L001, L002, ...); a busca filtra por código ou nome
   const montarListaLojas = (manterSelecao) => {
@@ -646,13 +783,17 @@ async function telaInicio(){
     let lista = (CFG.lojas || []).filter(l => !redeSelecionada || l.rede === redeSelecionada);
     if (termo) lista = lista.filter(l => normalizar(l.cod).includes(termo) || normalizar(l.nome).includes(termo));
     lista.sort((a, b) => (numCod(a.cod) - numCod(b.cod)) || String(a.cod).localeCompare(String(b.cod)));
-    $loja.innerHTML = `<option value="">${lista.length ? 'Selecione…' : 'Nenhuma loja encontrada'}</option>`;
+    const frag = document.createDocumentFragment();
+    const vazio = document.createElement('option'); vazio.value = '';
+    vazio.textContent = lista.length ? 'Selecione…' : 'Nenhuma loja encontrada';
+    frag.appendChild(vazio);
     lista.forEach(l => {
       const opt = document.createElement('option');
       opt.value = l.cod;
       opt.textContent = `${l.cod} — ${l.nome}`;
-      $loja.appendChild(opt);
+      frag.appendChild(opt);
     });
+    $loja.replaceChildren(frag);
     if (anterior && lista.some(l => l.cod === anterior)) $loja.value = anterior;
     else if (termo && lista.length === 1) $loja.value = lista[0].cod;   // só uma loja bate: já seleciona
     else $loja.value = '';
@@ -663,8 +804,15 @@ async function telaInicio(){
     $busca.value = '';
     montarListaLojas(false);
   };
-  $busca.oninput = () => montarListaLojas(true);
+  let tBusca;
+  $busca.oninput = () => { clearTimeout(tBusca); tBusca = setTimeout(() => montarListaLojas(true), 120); };
 
+  $tecBox.querySelectorAll('button').forEach(b => {
+    b.onclick = () => {
+      $tecBox.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b ? 'true' : 'false'));
+      localStorage.setItem('ultimoTecnico', b.dataset.tec);
+    };
+  });
   $redeBox.querySelectorAll('button').forEach(b => {
     b.onclick = () => {
       $redeBox.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b ? 'true' : 'false'));
@@ -674,21 +822,22 @@ async function telaInicio(){
   });
   atualizarLojasComFiltro(); // já abre filtrada pela última rede usada
 
-  const bloquearChecklists = () => {
-    $lista.querySelectorAll('[data-chk]').forEach(el => el.classList.toggle('desabilitada', !geoOk));
-  };
-
+  /* GPS não trava o início: o técnico pode começar o checklist enquanto o aparelho
+     procura a localização; ela é obrigatória só na hora de finalizar o relatório */
   const $geo = document.getElementById('geo'), $bGeo = document.getElementById('bGeo');
   const buscarGeo = async () => {
+    if (buscandoGeo) return;
+    buscandoGeo = true;
     $bGeo.classList.add('oculto');
-    $geo.textContent = 'Obtendo GPS…'; $geo.style.color = 'var(--cinza)';
+    $geo.innerHTML = `${ICO.gps} Obtendo GPS… (pode começar o checklist enquanto isso)`; $geo.className = 'geo-txt';
     geo = await pegarLocal();
-    geoOk = !geo.erro;
-    $geo.textContent = geoOk ? localTexto(geo)
-      : `${geo.erro} — a localização é obrigatória para iniciar a visita.`;
-    $geo.style.color = geoOk ? 'var(--verde)' : 'var(--vermelho)';
-    $bGeo.classList.toggle('oculto', geoOk);
-    bloquearChecklists();
+    buscandoGeo = false;
+    if (telaAtual !== 'inicio') return;
+    const ok = geoOk(geo);
+    $geo.innerHTML = ok ? `${ICO.gps} ${esc(localTexto(geo))}`
+      : `${ICO.alerta} ${esc(geo.erro)} — o app continua tentando; a localização é obrigatória para finalizar o relatório.`;
+    $geo.className = ok ? 'geo-txt ok' : 'geo-txt erro';
+    $bGeo.classList.toggle('oculto', ok);
   };
   buscarGeo();
   $bGeo.onclick = buscarGeo;
@@ -698,11 +847,6 @@ async function telaInicio(){
   $lista.querySelectorAll('[data-chk]').forEach(el => {
     el.onclick = async () => {
       const $err = document.getElementById('erroNova');
-      if (!geoOk){
-        $err.innerHTML = `<div class="aviso erro">Aguarde a localização ser obtida — ela é obrigatória para iniciar a visita.</div>`;
-        $err.scrollIntoView({behavior:'smooth', block:'center'});
-        return;
-      }
       const tec = $tec.value, rede = $rede.value, codLoja = $loja.value;
       if (!tec || !rede || !codLoja){
         $err.innerHTML = `<div class="aviso erro">Selecione o técnico, a rede e a loja antes de escolher o checklist.</div>`;
@@ -724,10 +868,11 @@ async function telaInicio(){
         tecnico: tec,
         loja: {cod: loja.cod, nome: loja.nome, endereco: loja.endereco || '', rede: loja.rede || rede},
         matricula: document.getElementById('fMat').value.trim(),
-        geo, checklist: el.dataset.chk, respostas, obs: {}, fotos: {},
+        geo: geoOk(geo) ? geo : null, checklist: el.dataset.chk, respostas, obs: {}, fotos: {},
         _dtBloqueado: bloqueado
       };
-      await BD.salvarVisita(visita);
+      await salvar();
+      if (!visita.geo) completarGeoDaVisita(visita.id);   // segue procurando em segundo plano
       telaChecklist();
     };
   });
@@ -738,6 +883,7 @@ const CLASSE_PRIO = {'Crítica':'critica','Alta':'alta','Média':'media','Media'
 const RUINS = ['não','nao'];
 
 function telaChecklist(){
+  telaAtual = 'checklist';
   liberarUrls();
   const chk = CFG.checklists.find(c => c.id === visita.checklist);
   const itens = itensDoChecklist(chk, visita);
@@ -754,23 +900,26 @@ function telaChecklist(){
   montarTela({
     titulo: chk.titulo,
     sub: `${visita.loja.cod} — ${visita.loja.nome || 's/ nome'} · ${visita.tecnico.split(' ')[0]}`,
-    voltar: async () => { await BD.salvarVisita(visita); telaInicio(); },   // sair guarda a visita em "Em andamento"
-    html: `<div class="progresso"><i id="pbar"></i></div><div class="prog-txt" id="ptxt"></div>${html}`,
+    voltar: async () => { await salvar(); telaInicio(); },   // sair guarda a visita em "Em andamento"
+    html: `<div class="progresso"><i id="pbar"></i></div><div class="prog-txt" id="ptxt"></div>
+           <div class="geo-linha" id="geoVisita"></div>${html}`,
     barra: `<button class="btn perigo" id="bCancelar" style="flex:1">Cancelar relatório</button>
             <button class="btn" id="bRevisar" style="flex:1.4">Revisar e finalizar</button>`
   });
+  pintarGeoNaTela();
   ligarItens(chk, itens);
-  atualizarProgresso(chk);
-  document.getElementById('bRevisar').onclick = async () => { await BD.salvarVisita(visita); telaRevisao(); };
+  document.getElementById('bRevisar').onclick = async () => { await salvar(); telaRevisao(); };
   // desistir do relatório: apaga a visita e as fotos dela deste aparelho (não vai para "Em andamento")
   document.getElementById('bCancelar').onclick = async () => {
-    if (!confirm('Cancelar este relatório? Tudo que foi respondido e fotografado nesta visita será apagado. Isso não pode ser desfeito.')) return;
+    const sim = await confirmar('Tudo que foi respondido e fotografado nesta visita será apagado. Isso não pode ser desfeito.',
+      {titulo:'Cancelar este relatório?', ok:'Cancelar relatório', cancelar:'Continuar', perigo:true});
+    if (!sim) return;
     await apagarVisitaCompleta(visita.id);
     visita = null;
     telaInicio();
   };
   const bCorr = document.getElementById('bCorrigirDT');
-  if (bCorr) bCorr.onclick = async () => { visita._dtBloqueado = false; await BD.salvarVisita(visita); telaChecklist(); };
+  if (bCorr) bCorr.onclick = async () => { visita._dtBloqueado = false; await salvar(); telaChecklist(); };
 }
 
 function htmlItem(it){
@@ -789,7 +938,9 @@ function htmlItem(it){
   const tagFoto = rotuloFoto ? `<span class="tag foto">${esc(rotuloFoto)}</span>` : '';
   let entrada = '';
   if (it.tipo === 'opcoes' || it.tipo === 'tristate'){
-    entrada = `<div class="opcoes">${it.opcoes.map(o => {
+    // muitas opções (modelos de filtro, potências): grade fixa de 3 colunas, alinhada
+    const grade = it.opcoes.length > 4 ? ' grade' : '';
+    entrada = `<div class="opcoes${grade}">${it.opcoes.map(o => {
       // perguntas marcadas como invertido (ex.: "Existe vestígio de pragas?") têm o
       // "Não" como resposta esperada, então o alerta vermelho vai no "Sim"
       const ruim = it.invertido ? o.toLowerCase() === 'sim' : RUINS.includes(o.toLowerCase());
@@ -806,14 +957,10 @@ function htmlItem(it){
         style="margin-top:9px" placeholder="${numerico ? 'Qual? Digite o valor' : 'Qual? Digite o nome'}" value="${esc(r === 'Outro' ? '' : (ehOutro(it, r) ? r : ''))}">`;
     }
   } else if (it.tipo === 'numero'){
-    // teclado numérico simplificado: campo só-leitura (não abre o teclado do
-    // celular) + botões grandes abaixo, para medições digitadas em campo
-    entrada = `<input type="text" inputmode="none" readonly data-in="${esc(it.id)}" class="visor-num"
-       value="${esc(r || '')}" placeholder="Toque nos números abaixo">
-       <div class="teclado-num" data-teclado="${esc(it.id)}">${
-         ['1','2','3','4','5','6','7','8','9',',','0','del'].map(t =>
-           `<button type="button" data-tecla="${t}">${t === 'del' ? '⌫' : t}</button>`).join('')
-       }</div>`;
+    // medição: campo só-leitura que abre o teclado numérico único do app (painel embaixo),
+    // sem abrir o teclado do celular
+    entrada = `<input type="text" inputmode="none" readonly data-in="${esc(it.id)}" data-numero="1" class="visor-num"
+       value="${esc(r || '')}" placeholder="Toque para digitar">`;
   } else if (it.tipo === 'texto'){
     entrada = `<input type="text" data-in="${esc(it.id)}" value="${esc(r || '')}" placeholder="Digite aqui">`;
   } else if (it.tipo === 'texto_amplo'){
@@ -829,11 +976,53 @@ function htmlItem(it){
   </div>`;
 }
 
+/* ---------- teclado numérico único (painel fixo embaixo) ---------- */
+function abrirTeclado(it, input, aoMudar){
+  let painel = document.getElementById('painelTeclado');
+  if (!painel){
+    painel = document.createElement('div');
+    painel.id = 'painelTeclado'; painel.className = 'painel-teclado';
+    painel.innerHTML = `<div class="pt-cab"><span id="ptRotulo"></span>
+        <button type="button" class="pt-ok" id="ptFechar">${ICO.ok} OK</button></div>
+      <div class="teclado-num">${['1','2','3','4','5','6','7','8','9',',','0','del','sep'].map(t =>
+        `<button type="button" data-tecla="${t}" aria-label="${t === 'del' ? 'Apagar' : t === 'sep' ? 'Separar valores' : t}">${
+          t === 'del' ? ICO.apagar : t === 'sep' ? '/ &nbsp;<small>separar valores (ex.: fases A / B / C)</small>' : t}</button>`).join('')}</div>`;
+    document.body.appendChild(painel);
+  }
+  painel.querySelector('#ptRotulo').textContent = it.pergunta;
+  painel.querySelector('#ptFechar').onclick = fecharTeclado;
+  painel.querySelectorAll('[data-tecla]').forEach(b => {
+    b.onclick = () => {
+      let v = input.value || '';
+      const t = b.dataset.tecla;
+      if (t === 'del') v = v.endsWith(' / ') ? v.slice(0, -3) : v.slice(0, -1);
+      else if (t === 'sep'){ if (v && !v.endsWith(' / ')) v += ' / '; }
+      else if (t === ','){ const ultimo = v.split(' / ').pop(); if (ultimo && !ultimo.includes(',')) v += ','; }
+      else v += t;
+      input.value = v;
+      aoMudar(v);
+    };
+  });
+  document.querySelectorAll('.visor-num.ativo').forEach(x => x.classList.remove('ativo'));
+  input.classList.add('ativo');
+  document.body.classList.add('com-teclado');
+  painel.classList.add('aberto');
+  setTimeout(() => input.scrollIntoView({behavior:'smooth', block:'center'}), 50);
+}
+function fecharTeclado(){
+  document.getElementById('painelTeclado')?.classList.remove('aberto');
+  document.body.classList.remove('com-teclado');
+  document.querySelectorAll('.visor-num.ativo').forEach(x => x.classList.remove('ativo'));
+}
+
 function ligarItens(chk, itens){
+  const porId = new Map(itens.map(i => [i.id, i]));
+  // grava e repinta só o item mexido (e os que dependem dele) — não a tela inteira
+  const gravar = async (id) => { salvarDadosTecnicosSeCompleto(chk, visita); await salvar(); redesenharItem(chk, itens, id); };
   $tela.querySelectorAll('[data-op]').forEach(b => {
     b.onclick = async () => {
       const id = b.dataset.op, val = b.dataset.val;
-      const it = itens.find(i => i.id === id);
+      const it = porId.get(id);
       const jaMarcado = (val === 'Outro') ? ehOutro(it, visita.respostas[id]) : (visita.respostas[id] === val);
       visita.respostas[id] = jaMarcado ? '' : val;
       const r = visita.respostas[id];
@@ -845,46 +1034,30 @@ function ligarItens(chk, itens){
         cx.classList.toggle('oculto', !mostrar);
         if (mostrar){ cx.value = (r === 'Outro') ? '' : r; cx.focus(); } else cx.value = '';
       }
-      salvarDadosTecnicosSeCompleto(chk, visita);
-      await BD.salvarVisita(visita);
-      redesenhar(chk, itens);
+      await gravar(id);
     };
   });
   $tela.querySelectorAll('[data-in]').forEach(el => {
-    el.oninput = () => { visita.respostas[el.dataset.in] = el.value; };
-    el.onblur  = async () => { salvarDadosTecnicosSeCompleto(chk, visita); await BD.salvarVisita(visita); redesenhar(chk, itens); };
-  });
-  // teclado numérico simplificado: cada toque atualiza o campo (só-leitura) e
-  // agenda a mesma gravação/recalculo que aconteceria ao sair do campo
-  $tela.querySelectorAll('[data-teclado]').forEach(cx => {
-    const id = cx.dataset.teclado;
-    const input = $tela.querySelector(`input[data-in="${CSS.escape(id)}"]`);
-    if (!input) return;
-    cx.querySelectorAll('[data-tecla]').forEach(b => {
-      b.onclick = () => {
-        let v = input.value || '';
-        const t = b.dataset.tecla;
-        if (t === 'del') v = v.slice(0, -1);
-        else if (t === ','){ if (v && !v.includes(',')) v += ','; }
-        else v += t;
-        input.value = v;
-        input.dispatchEvent(new Event('input', {bubbles:true}));
-        clearTimeout(cx._t);
-        cx._t = setTimeout(async () => {
-          salvarDadosTecnicosSeCompleto(chk, visita);
-          await BD.salvarVisita(visita);
-          redesenhar(chk, itens);
-        }, 500);
-      };
-    });
+    const id = el.dataset.in;
+    if (el.dataset.numero){
+      el.onclick = () => abrirTeclado(porId.get(id), el, v => {
+        visita.respostas[id] = v;
+        clearTimeout(el._t);
+        el._t = setTimeout(() => gravar(id), 400);
+      });
+      el.onfocus = () => el.blur();   // nunca abre o teclado do celular
+      return;
+    }
+    el.oninput = () => { visita.respostas[id] = el.value; };
+    el.onblur  = () => gravar(id);
   });
   $tela.querySelectorAll('[data-outro]').forEach(el => {
     el.oninput = () => { visita.respostas[el.dataset.outro] = el.value.trim() || 'Outro'; };
-    el.onblur  = async () => { salvarDadosTecnicosSeCompleto(chk, visita); await BD.salvarVisita(visita); redesenhar(chk, itens); };
+    el.onblur  = () => gravar(el.dataset.outro);
   });
   $tela.querySelectorAll('[data-obs]').forEach(el => {
     el.oninput = () => { visita.obs[el.dataset.obs] = el.value; };
-    el.onblur  = () => BD.salvarVisita(visita);
+    el.onblur  = () => salvar();
   });
   redesenhar(chk, itens);
 }
@@ -896,22 +1069,26 @@ async function desenharFotos(it){
   const precisa = exigeFoto(it, visita.respostas[it.id]);
   const urls = await Promise.all(ids.map(urlFoto));
   cx.innerHTML = ids.map((fid,i) =>
-      `<div class="miniatura"><img src="${urls[i]}" alt=""><button data-rm="${fid}" data-de="${esc(it.id)}"
-        aria-label="Remover foto">×</button></div>`).join('') +
+      `<div class="miniatura"><img src="${urls[i]}" alt=""><button type="button" data-rm="${fid}" data-de="${esc(it.id)}"
+        aria-label="Remover foto">${ICO.fechar}</button></div>`).join('') +
     `<label class="add-foto${precisa && ids.length === 0 ? ' exigida' : ''}">
-       <span>📷</span><span>${precisa && ids.length===0 ? 'Foto obrigatória' : 'Adicionar'}</span>
+       ${ICO.camera}<span>${precisa && ids.length===0 ? 'Foto obrigatória' : 'Adicionar'}</span>
        <input type="file" accept="image/*" capture="environment" multiple hidden data-cam="${esc(it.id)}">
      </label>`;
   cx.querySelector('[data-cam]').onchange = async e => {
     const arqs = [...e.target.files];
     e.target.value = '';
-    for (const a of arqs){
-      const blob = await comprimir(a);
-      const fid = uid();
-      await BD.salvarFoto(fid, blob);
-      (visita.fotos[it.id] = visita.fotos[it.id] || []).push(fid);
+    try {
+      for (const a of arqs){
+        const blob = await comprimir(a);
+        const fid = uid();
+        await BD.salvarFoto(fid, blob);
+        (visita.fotos[it.id] = visita.fotos[it.id] || []).push(fid);
+      }
+    } catch (err) {
+      avisar('Não foi possível guardar a foto. Verifique o espaço livre do celular.');
     }
-    await BD.salvarVisita(visita);
+    await salvar();
     const chk = CFG.checklists.find(c => c.id === visita.checklist);
     await desenharFotos(it);
     atualizarProgresso(chk);
@@ -921,9 +1098,9 @@ async function desenharFotos(it){
     b.onclick = async () => {
       const fid = b.dataset.rm;
       visita.fotos[it.id] = (visita.fotos[it.id] || []).filter(x => x !== fid);
-      await BD.apagarFoto(fid);
+      await BD.apagarFoto(fid).catch(() => {});
       if (urlsFoto.has(fid)){ URL.revokeObjectURL(urlsFoto.get(fid)); urlsFoto.delete(fid); }
-      await BD.salvarVisita(visita);
+      await salvar();
       const chk = CFG.checklists.find(c => c.id === visita.checklist);
       await desenharFotos(it);
       atualizarProgresso(chk); pintarItem(it);
@@ -944,6 +1121,19 @@ function pintarItem(it){
   el.classList.toggle('pendente-obrig', respondido && faltaFoto);
 }
 
+/* repinta um item e os que dependem dele (visibilidade condicional / foto por resposta) */
+function redesenharItem(chk, itens, id){
+  const alvo = itens.filter(it => it.id === id || (it.cond && it.cond.id === id));
+  for (const it of alvo){
+    const el = $tela.querySelector(`[data-item="${CSS.escape(it.id)}"]`);
+    if (!el) continue;
+    const mostra = visivel(it, visita.respostas);
+    el.classList.toggle('oculto', !mostra);
+    if (it._bloqueado) continue;
+    if (mostra){ desenharFotos(it); pintarItem(it); }
+  }
+  atualizarProgresso(chk);
+}
 function redesenhar(chk, itens){
   for (const it of itens){
     const el = $tela.querySelector(`[data-item="${CSS.escape(it.id)}"]`);
@@ -968,6 +1158,7 @@ function atualizarProgresso(chk){
 
 /* ===================== tela: revisão ===================== */
 function telaRevisao(){
+  telaAtual = 'revisao';
   liberarUrls();
   const chk = CFG.checklists.find(c => c.id === visita.checklist);
   const falta = pendencias(chk, visita);
@@ -975,6 +1166,7 @@ function telaRevisao(){
   const ncs = visiveis.filter(it => situacao(it, visita.respostas[it.id]) === 'Não conforme');
   const nas = visiveis.filter(it => situacao(it, visita.respostas[it.id]) === 'Não se aplica');
   const nFotos = Object.values(visita.fotos).reduce((a,b) => a + b.length, 0);
+  const temGeo = geoOk(visita.geo);
 
   const listaFalta = falta.length ? `
     <div class="aviso"><strong>${falta.length} item(ns) pendente(s).</strong> O relatório pode ser
@@ -982,7 +1174,7 @@ function telaRevisao(){
     ${falta.map(f => `<div class="linha-lista" data-ir="${esc(f.item.id)}">
       <div class="cresce"><div class="t" style="font-size:14px">${esc(f.item.pergunta)}</div>
       <div class="s">${f.semResposta ? 'sem resposta' : ''}${f.semResposta && f.semFoto ? ' · ' : ''}${f.semFoto ? 'falta foto' : ''}</div></div>
-      <span style="color:var(--cinza);font-size:20px">›</span></div>`).join('')}` : '';
+      <span class="seta">›</span></div>`).join('')}` : '';
 
   const listaNC = ncs.length ? `<h2>Não conformidades (${ncs.length})</h2>
     ${ncs.map(it => `<div class="item nao-conforme">
@@ -998,23 +1190,21 @@ function telaRevisao(){
     titulo: 'Revisão', sub: `${visita.loja.cod} · ${chk.titulo}`, voltar: telaChecklist,
     html: `
       <div class="cartao">
-        <div style="display:flex;gap:14px;text-align:center">
-          <div style="flex:1"><div style="font-size:26px;font-weight:700">${visiveis.length - falta.length}/${visiveis.length}</div>
-            <div style="font-size:11.5px;color:var(--cinza)">respondidos</div></div>
-          <div style="flex:1"><div style="font-size:26px;font-weight:700;color:${ncs.length?'var(--vermelho)':'var(--verde)'}">${ncs.length}</div>
-            <div style="font-size:11.5px;color:var(--cinza)">não conformes</div></div>
-          <div style="flex:1"><div style="font-size:26px;font-weight:700">${nas.length}</div>
-            <div style="font-size:11.5px;color:var(--cinza)">não se aplica</div></div>
-          <div style="flex:1"><div style="font-size:26px;font-weight:700">${nFotos}</div>
-            <div style="font-size:11.5px;color:var(--cinza)">fotos</div></div>
+        <div class="resumo-nums">
+          <div><b>${visiveis.length - falta.length}/${visiveis.length}</b><span>respondidos</span></div>
+          <div><b style="color:${ncs.length?'var(--vermelho)':'var(--verde)'}">${ncs.length}</b><span>não conformes</span></div>
+          <div><b>${nas.length}</b><span>não se aplica</span></div>
+          <div><b>${nFotos}</b><span>fotos</span></div>
         </div>
       </div>
       <div class="cartao" style="font-size:13.5px;color:#374151">
         <div><strong>Técnico:</strong> ${esc(visita.tecnico)}</div>
         <div><strong>Loja:</strong> ${esc(visita.loja.cod)} — ${esc(visita.loja.nome || 's/ nome')}</div>
         <div><strong>Início:</strong> ${dataBR(visita.criadoEm)}, ${horaBR(visita.criadoEm)}</div>
-        <div><strong>Localização:</strong> ${esc(localTexto(visita.geo))}</div>
-        ${visita.geo && visita.geo.erro ? `<button class="btn sec pq" id="bGeo2" style="margin-top:8px">Tentar obter GPS agora</button>` : ''}
+        <div id="revGeo"><strong>Localização:</strong> ${esc(localTexto(visita.geo))}</div>
+        ${temGeo ? '' : `<div class="aviso erro" style="margin-top:10px">A localização é obrigatória para finalizar. Ao tocar em
+          <strong>Finalizar relatório</strong> o app tenta obter o GPS de novo — se não conseguir, vá para um local com sinal e tente outra vez.</div>
+          <button class="btn sec pq" id="bGeo2">${ICO.gps} Tentar obter o GPS agora</button>`}
       </div>
       ${listaFalta}${listaNC}`,
     barra: `<button class="btn sec" id="bVoltarChk" style="flex:1">Continuar editando</button>
@@ -1022,7 +1212,10 @@ function telaRevisao(){
   });
 
   const g2 = document.getElementById('bGeo2');
-  if (g2) g2.onclick = async () => { visita.geo = await pegarLocal(); await BD.salvarVisita(visita); telaRevisao(); };
+  if (g2) g2.onclick = async () => {
+    g2.disabled = true; g2.textContent = 'Obtendo GPS…';
+    visita.geo = await pegarLocal(); await salvar(); telaRevisao();
+  };
   $tela.querySelectorAll('[data-ir]').forEach(el => el.onclick = () => {
     telaChecklist();
     setTimeout(() => {
@@ -1031,11 +1224,23 @@ function telaRevisao(){
     }, 60);
   });
   document.getElementById('bVoltarChk').onclick = telaChecklist;
-  document.getElementById('bFinalizar').onclick = async () => {
+  const bFim = document.getElementById('bFinalizar');
+  bFim.onclick = async () => {
+    bFim.disabled = true;
+    if (!geoOk(visita.geo)){
+      bFim.textContent = 'Obtendo GPS…';
+      const g = await pegarLocal();
+      if (g.erro){
+        visita.geo = g; await salvar();
+        avisar('Sem localização: o relatório não pode ser finalizado ainda. Tente em um local com sinal de GPS.');
+        telaRevisao();
+        return;
+      }
+      visita.geo = g;
+    }
     visita.finalizada = true;
     visita.emitidoEm = new Date().toISOString();
-    if (!visita.geo || visita.geo.erro){ const g = await pegarLocal(); if (!g.erro) visita.geo = g; }
-    await BD.salvarVisita(visita);
+    await salvar();
     enviarRelatorioCentral(visita);
     telaRelatorio();
   };
@@ -1043,12 +1248,14 @@ function telaRevisao(){
 
 /* ===================== tela: relatório ===================== */
 async function telaRelatorio(){
+  telaAtual = 'relatorio';
   liberarUrls();
   const chk = CFG.checklists.find(c => c.id === visita.checklist);
   const visiveis = itensDoChecklist(chk, visita).filter(it => visivel(it, visita.respostas));
   const cont = {Conforme:0, 'Não conforme':0, 'Não se aplica':0, Informativo:0, Pendente:0};
   for (const it of visiveis) cont[situacao(it, visita.respostas[it.id])]++;
   const avaliados = visiveis.length;
+  const loja = encontrarLoja(visita.loja.cod) || visita.loja;
 
   const idsFoto = [];
   for (const it of visiveis) (visita.fotos[it.id] || []).forEach(f => idsFoto.push(f));
@@ -1060,16 +1267,22 @@ async function telaRelatorio(){
     const r = visita.respostas[it.id];
     const sit = situacao(it, r);
     const fotos = (visita.fotos[it.id] || []);
+    const qtd = qtdFotosItem(visita, it.id);
     const valor = (it.tipo === 'foto')
-      ? (fotos.length ? `${fotos.length} foto(s) registrada(s)` : 'Não informado')
+      ? (qtd ? `${qtd} foto(s) registrada(s)` : 'Não informado')
       : (r == null || r === '' ? 'Não informado' : r);
     linhas += `<tr><th>${esc(it.pergunta)}</th><td>
       <span class="${sit === 'Não conforme' ? 'nc' : ''}">${esc(valor)}</span>
       ${sit === 'Não conforme' ? ' <strong class="nc">— NÃO CONFORME</strong>' : ''}
       ${visita.obs[it.id] ? `<div style="color:#555;margin-top:3px"><em>Obs.: ${esc(visita.obs[it.id])}</em></div>` : ''}
-      ${fotos.length ? `<div class="fotos-rel">${fotos.map(f => `<img src="${urls[f]}" alt="">`).join('')}</div>` : ''}
+      ${fotos.length ? `<div class="fotos-rel">${fotos.map(f => `<img src="${urls[f]}" alt="">`).join('')}</div>`
+        : (qtd && visita.fotosApagadasEm ? `<div style="color:#777;font-size:11px;margin-top:3px">${qtd} foto(s) — removidas do aparelho após ${DIAS_GUARDAR_FOTOS} dias; ver no PDF gerado na época.</div>` : '')}
     </td></tr>`;
   }
+  const emissao = visita.emitidoEm ? `${dataBR(visita.emitidoEm)}, ${horaBR(visita.emitidoEm)}` : '—';
+  const cabRep = `<div class="cab-rep"><img src="logo.png" alt="DMA"><div><b>Relatório de Inspeção de Manutenção</b>
+      <span>${esc(chk.titulo)} · ${esc(visita.loja.cod)} — ${esc(visita.loja.nome || '')} · ${dataBR(visita.criadoEm)}</span></div></div>`;
+  const rodRep = `<div class="rod-rep"><span>Equipe Gerador — Grupo DMA</span><span>Relatório ${esc(visita.id)} · emitido em ${esc(emissao)}</span></div>`;
 
   montarTela({
     titulo: 'Relatório', sub: `${visita.loja.cod} · ${dataBR(visita.criadoEm)}`, voltar: telaRelatorios,
@@ -1077,35 +1290,48 @@ async function telaRelatorio(){
       <div class="aviso nao-imprime">Toque em <strong>Gerar relatório</strong>: os dados são exportados e, em
       seguida, escolha “Salvar como PDF” na tela de impressão do celular.</div>
       <div id="relatorio">
-      <table class="folha"><thead><tr><td class="topo"></td></tr></thead><tfoot><tr><td class="rodape"></td></tr></tfoot>
+      <table class="folha"><thead><tr><td class="topo">${cabRep}</td></tr></thead><tfoot><tr><td class="rodape">${rodRep}</td></tr></tfoot>
       <tbody><tr><td class="miolo">
-        <h3>RELATÓRIO DE INSPEÇÃO DE MANUTENÇÃO</h3>
-        <div class="rsub">${esc(chk.titulo)} · Atendimento Equipe Gerador — Grupo DMA</div>
+        <div class="rel-cab">
+          <img src="logo.png" alt="DMA" class="rel-logo">
+          <div class="rel-tit">
+            <h3>RELATÓRIO DE INSPEÇÃO DE MANUTENÇÃO</h3>
+            <div class="rsub">${esc(chk.titulo)} · Atendimento Equipe Gerador — Grupo DMA</div>
+          </div>
+          <div class="rel-num"><span>Relatório nº</span><b>${esc(visita.id)}</b></div>
+        </div>
+        <div class="rel-2col">
         <table>
-          <tr><th>Relatório nº</th><td>${esc(visita.id)}</td></tr>
-          <tr><th>Responsável</th><td>${esc(visita.tecnico)}</td></tr>
-          <tr><th>Data / Hora</th><td>${dataBR(visita.criadoEm)}, ${horaBR(visita.criadoEm)}</td></tr>
           <tr><th>Loja</th><td>${esc(visita.loja.cod)} — ${esc(visita.loja.nome || '')}</td></tr>
           ${visita.loja.endereco ? `<tr><th>Endereço</th><td>${esc(visita.loja.endereco)}</td></tr>` : ''}
+          ${loja.regional ? `<tr><th>Regional</th><td>${esc(loja.regional)}</td></tr>` : ''}
+          ${loja.cnpj ? `<tr><th>CNPJ</th><td>${esc(formatarCNPJ(loja.cnpj))}</td></tr>` : ''}
+        </table>
+        <table>
+          <tr><th>Responsável</th><td>${esc(visita.tecnico)}</td></tr>
+          <tr><th>Data / Hora</th><td>${dataBR(visita.criadoEm)}, ${horaBR(visita.criadoEm)}</td></tr>
           <tr><th>Geolocalização</th><td>${esc(localTexto(visita.geo))}</td></tr>
           ${visita.matricula ? `<tr><th>Matrícula do acompanhante</th><td>${esc(visita.matricula)}</td></tr>` : ''}
         </table>
-        <table>
-          <tr><th>Total avaliado</th><td>${avaliados}</td></tr>
-          <tr><th>Conformes</th><td>${cont.Conforme + cont.Informativo}</td></tr>
-          <tr><th>Não conformes</th><td class="${cont['Não conforme'] ? 'nc' : ''}">${cont['Não conforme']}</td></tr>
-          <tr><th>Não aplicáveis</th><td>${cont['Não se aplica']}</td></tr>
-        </table>
-        <table>${linhas}</table>
-        <div style="margin-top:16px;font-size:11.5px;color:#555">
+        </div>
+        <div class="rel-totais">
+          <div><b>${avaliados}</b><span>itens avaliados</span></div>
+          <div class="ok"><b>${cont.Conforme + cont.Informativo}</b><span>conformes</span></div>
+          <div class="${cont['Não conforme'] ? 'ruim' : ''}"><b>${cont['Não conforme']}</b><span>não conformes</span></div>
+          <div><b>${cont['Não se aplica']}</b><span>não aplicáveis</span></div>
+        </div>
+        <table class="rel-itens">${linhas}</table>
+        <div class="rel-decl">
           Declaro que o presente relatório registra com exatidão as condições técnicas e operacionais
-          observadas durante a visita no estabelecimento.<br><br>
-          Emissão: ${visita.emitidoEm ? dataBR(visita.emitidoEm) + ', ' + horaBR(visita.emitidoEm) : '—'}<br>
-          <strong>${esc(visita.tecnico)}</strong>
+          observadas durante a visita no estabelecimento. Emissão: ${esc(emissao)}.
+        </div>
+        <div class="rel-assin">
+          <div><div class="linha"></div><b>${esc(visita.tecnico)}</b><span>Técnico responsável — Equipe Gerador</span></div>
+          <div><div class="linha"></div><b>${visita.matricula ? 'Matrícula ' + esc(visita.matricula) : '&nbsp;'}</b><span>Gerente / responsável da loja</span></div>
         </div>
       </td></tr></tbody></table>
       </div>`,
-    barra: `<button class="btn" id="bGerar" style="flex:1">Gerar relatório</button>`
+    barra: `<button class="btn" id="bGerar" style="flex:1">${ICO.doc} Gerar relatório</button>`
   });
 
   // o título da página vira o nome sugerido do PDF em "Salvar como PDF"
@@ -1134,7 +1360,7 @@ function exportarJSON(chk, visiveis, nomeArq){
       observacao: visita.obs[it.id] || null,
       situacao: situacao(it, visita.respostas[it.id]),
       prioridade: it.prioridade || null,
-      qtd_fotos: (visita.fotos[it.id] || []).length
+      qtd_fotos: qtdFotosItem(visita, it.id)
     }))
   };
   const nome = `${nomeArq || nomeArquivoRelatorio(visita)}.json`;
@@ -1145,31 +1371,80 @@ function exportarJSON(chk, visiveis, nomeArq){
   setTimeout(() => URL.revokeObjectURL(a.href), 4000);
 }
 
-/* ===================== partida ===================== */
+/* ===================== partida =====================
+   O app abre na hora com a cópia guardada no aparelho (service worker + localStorage) e
+   confere em segundo plano se há perguntas ou lojas novas; se houver, troca sem o técnico
+   perceber. Assim não fica em tela branca esperando a internet no subsolo da loja. */
 function estadoRede(){
   const el = document.getElementById('rede');
   el.textContent = navigator.onLine ? 'online' : 'offline';
   el.classList.toggle('off', !navigator.onLine);
 }
-addEventListener('online', () => { estadoRede(); if (CFG) sincronizarCentral(); });
+addEventListener('online', () => { estadoRede(); if (CFG){ sincronizarCentral(); atualizarBaseEmSegundoPlano(); } });
 addEventListener('offline', estadoRede);
+
+const comTempo = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error('tempo esgotado')), ms))]);
+async function carregarJSON(nome, opts){
+  const r = await fetch(nome, opts);
+  if (!r.ok) throw new Error(`${nome}: HTTP ${r.status}`);
+  return r.json();
+}
+/* lojas vêm de lojas.json (arquivo separado, grande); versões antigas as traziam dentro do
+   checklists.json. O sufixo "?atualizar=1" faz o service worker ir à rede e guardar no cache. */
+async function carregarBase(opts, ms, sufixo = ''){
+  const cfg = await comTempo(carregarJSON('checklists.json' + sufixo, opts), ms);
+  if (!Array.isArray(cfg.lojas) || !cfg.lojas.length){
+    const lj = await comTempo(carregarJSON('lojas.json' + sufixo, opts), ms);
+    cfg.lojas = lj.lojas || []; cfg.versaoLojas = lj.versao || '';
+  } else cfg.versaoLojas = cfg.versao || '';
+  return cfg;
+}
+function guardarBaseLocal(cfg){
+  // cópia de segurança no localStorage, gravada só quando a versão muda (é grande)
+  const marca = `${cfg.versao}|${cfg.versaoLojas}`;
+  if (localStorage.getItem('baseMarca') === marca) return;
+  gravarLS('cfgCache', Object.assign({}, cfg, {lojas: undefined, _lojasBase: undefined}));
+  gravarLS('lojasCache', {versao: cfg.versaoLojas, lojas: cfg.lojas});
+  localStorage.setItem('baseMarca', marca);
+}
+function lerBaseLocal(){
+  const cfg = lerLS('cfgCache', null);
+  if (!cfg) return null;
+  const lj = lerLS('lojasCache', null);
+  cfg.lojas = (lj && lj.lojas) || cfg.lojas || [];
+  cfg.versaoLojas = (lj && lj.versao) || cfg.versao || '';
+  return cfg;
+}
+async function atualizarBaseEmSegundoPlano(){
+  if (!navigator.onLine) return;
+  try {
+    const nova = await carregarBase({cache:'no-store'}, 20000, '?atualizar=1');
+    if (!nova || (nova.versao === CFG.versao && nova.versaoLojas === CFG.versaoLojas)) return;
+    CFG = nova;
+    guardarBaseLocal(CFG);
+    aplicarExtrasLocais();
+    if (telaAtual === 'inicio' && !visita) telaInicio();
+  } catch (e) {}
+}
 
 (async function iniciar(){
   estadoRede();
   try {
-    CFG = await (await fetch('checklists.json', {cache:'no-cache'})).json();
-    localStorage.setItem('cfgCache', JSON.stringify(CFG));
+    CFG = await carregarBase({}, 8000);          // com service worker: vem do cache na hora
   } catch (e) {
-    const c = localStorage.getItem('cfgCache');
-    if (c) CFG = JSON.parse(c);
+    CFG = lerBaseLocal();
   }
   if (!CFG){
     $tela.innerHTML = `<div class="aviso erro">Não foi possível carregar os checklists.
-      Conecte-se à internet uma vez para o app baixar a lista de perguntas.</div>`;
+      Conecte-se à internet uma vez para o app baixar a lista de perguntas.</div>
+      <button class="btn" onclick="location.reload()">Tentar de novo</button>`;
     return;
   }
+  guardarBaseLocal(CFG);
   aplicarExtrasLocais();
   await telaInicio();
-  sincronizarCentral();   // em segundo plano: envia o que estiver pendente e baixa a base central
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+  sincronizarCentral();            // em segundo plano: envia o que estiver pendente e baixa a base central
+  atualizarBaseEmSegundoPlano();   // em segundo plano: perguntas/lojas novas, se houver
+  limparFotosAntigas();            // em segundo plano: fotos de relatórios antigos já enviados
 })();
