@@ -44,7 +44,7 @@ const BD = (() => {
 /* ===================== versão =====================
    Mostrada na tela inicial para conferir se o aparelho está com a versão publicada.
    A cada publicação: trocar aqui e no CACHE do sw.js. */
-const VERSAO_APP = '36';
+const VERSAO_APP = '37';
 const DATA_VERSAO = '16/11/2026';
 
 /* ===================== estado ===================== */
