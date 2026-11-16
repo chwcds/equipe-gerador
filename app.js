@@ -44,7 +44,7 @@ const BD = (() => {
 /* ===================== versão =====================
    Mostrada na tela inicial para conferir se o aparelho está com a versão publicada.
    A cada publicação: trocar aqui e no CACHE do sw.js. */
-const VERSAO_APP = '34';
+const VERSAO_APP = '35';
 const DATA_VERSAO = '16/11/2026';
 
 /* ===================== estado ===================== */
@@ -485,6 +485,7 @@ async function salvar(){
 
 /* ===================== dados da loja (modal) ===================== */
 const TEL_CEMIG = '08007232827';
+const CNPJ_MATRIZ_BH = '04641376000136';   // lojas do BH: a concessionária pede só o CNPJ da matriz
 const formatarCNPJ = v => {
   const d = String(v || '').replace(/\D/g, '');
   return d.length === 14 ? `${d.slice(0,2)}.${d.slice(2,5)}.${d.slice(5,8)}/${d.slice(8,12)}-${d.slice(12)}` : (v || '');
@@ -511,8 +512,12 @@ function abrirDadosLoja(loja){
       ${linha('Endereço', loja.endereco || 'Endereço não cadastrado.')}
       ${mapaUrl ? `<a class="btn sec pq" href="${mapaUrl}" target="_blank" rel="noopener" style="margin:2px 0 12px">${ICO.mapa} Abrir no mapa</a>` : ''}
       ${linha('Regional', loja.regional)}
-      ${linha('CNPJ', formatarCNPJ(loja.cnpj))}
-      ${linha('Unidade consumidora', loja.unidade_consumidora)}
+      ${loja.rede === 'Supermercados BH'
+        ? `<div style="border-left:4px solid #1a7f37;padding-left:8px;margin:4px 0">${linha('CNPJ para a concessionária (matriz)', formatarCNPJ(CNPJ_MATRIZ_BH))}</div>${linha('CNPJ da loja', formatarCNPJ(loja.cnpj))}`
+        : linha('CNPJ', formatarCNPJ(loja.cnpj))}
+      ${Array.isArray(loja.ucs) && loja.ucs.length
+        ? loja.ucs.map(u => linha('Unidade consumidora — ' + u.nome, u.uc)).join('')
+        : linha('Unidade consumidora', loja.unidade_consumidora)}
       ${loja.uf === 'MG' ? `<a class="btn pq" href="tel:${TEL_CEMIG}" style="margin-top:6px">${ICO.fone} Ligar para a Cemig</a>` : ''}
     </div>`;
   document.body.appendChild(div);
