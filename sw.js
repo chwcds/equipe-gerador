@@ -1,6 +1,6 @@
 /* Service worker — deixa o app abrir sem internet e abrir RÁPIDO com internet fraca.
    Ao publicar uma versão nova, troque o número em CACHE. */
-const CACHE = 'equipe-gerador-v36';
+const CACHE = 'equipe-gerador-v37';
 const ARQUIVOS = [
   './', './index.html', './app.js', './checklists.json', './lojas.json', './manifest.webmanifest',
   './logo.png', './logo-bh.svg', './icon-192.png', './icon-512.png', './icon.svg',
@@ -8,7 +8,8 @@ const ARQUIVOS = [
 ];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ARQUIVOS)).then(() => self.skipWaiting()));
+  // cache:'reload' ignora a cópia que o navegador ainda guarda (até 10 min) e busca a versão publicada
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ARQUIVOS.map(u => new Request(u, {cache: 'reload'})))).then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', e => {
@@ -43,7 +44,8 @@ self.addEventListener('fetch', e => {
 
   e.respondWith(
     caches.match(e.request).then(cacheada => {
-      const rede = fetch(e.request).then(r => {
+      // cache:'no-cache' confere com o servidor se o arquivo mudou, em vez de reaproveitar a cópia do navegador
+      const rede = fetch(e.request, {cache: 'no-cache'}).then(r => {
         if (r && r.status === 200) {
           const copia = r.clone();
           caches.open(CACHE).then(c => c.put(e.request, copia));
