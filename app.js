@@ -44,7 +44,7 @@ const BD = (() => {
 /* ===================== versão =====================
    Mostrada na tela inicial para conferir se o aparelho está com a versão publicada.
    A cada publicação: trocar aqui e no CACHE do sw.js. */
-const VERSAO_APP = '38';
+const VERSAO_APP = '39';
 const DATA_VERSAO = '16/11/2026';
 
 /* ===================== estado ===================== */
@@ -484,6 +484,28 @@ async function salvar(){
 }
 
 /* ===================== dados da loja (modal) ===================== */
+/* preventiva e bateria: o lojas.json traz a data da última preventiva (ult_preventiva) e da última
+   troca de bateria (ult_bateria), em AAAA-MM-DD; o vencimento é calculado na hora, pelo calendário. */
+const DIAS_PREVENTIVA = 180, ANOS_BATERIA = 3;
+function vencimentos(loja){
+  const dia = s => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(s || '')); return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null; };
+  const fmt = d => `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+  const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
+  const out = [];
+  const p = dia(loja && loja.ult_preventiva);
+  if (p){
+    const v = new Date(p.getFullYear(), p.getMonth(), p.getDate() + DIAS_PREVENTIVA);
+    out.push({tipo: 'Preventiva', ultima: fmt(p), vence: fmt(v), atrasado: v < hoje,
+      texto: v < hoje ? `Preventiva atrasada desde ${fmt(v)}` : `Próxima preventiva: ${fmt(v)}`});
+  }
+  const b = dia(loja && loja.ult_bateria);
+  if (b){
+    const v = new Date(b.getFullYear() + ANOS_BATERIA, b.getMonth(), b.getDate());
+    out.push({tipo: 'Bateria', ultima: fmt(b), vence: fmt(v), atrasado: v < hoje,
+      texto: v < hoje ? `Troca de bateria atrasada desde ${fmt(v)}` : `Próxima troca de bateria: ${fmt(v)}`});
+  }
+  return out;
+}
 const TEL_CEMIG = '08007232827';
 const CNPJ_MATRIZ_BH = '04641376000136';   // lojas do BH: a concessionária pede só o CNPJ da matriz
 const formatarCNPJ = v => {
@@ -513,6 +535,7 @@ function abrirDadosLoja(loja){
       ${mapaUrl ? `<a class="btn sec pq" href="${mapaUrl}" target="_blank" rel="noopener" style="margin:2px 0 12px">${ICO.mapa} Abrir no mapa</a>` : ''}
       ${linha('Regional', loja.regional)}
       ${linha('Técnico responsável', loja.tecnico)}
+      ${vencimentos(loja).map(x => linha(x.tipo === 'Preventiva' ? 'Última preventiva' : 'Última troca de bateria', `${x.ultima} · ${x.atrasado ? 'atrasada desde' : 'próxima em'} ${x.vence}`)).join('')}
       ${loja.rede === 'Supermercados BH'
         ? `<div style="border-left:4px solid #1a7f37;padding-left:8px;margin:4px 0">${linha('CNPJ para a concessionária (matriz)', formatarCNPJ(CNPJ_MATRIZ_BH))}</div>${linha('CNPJ da loja', formatarCNPJ(loja.cnpj))}`
         : linha('CNPJ', formatarCNPJ(loja.cnpj))}
@@ -738,6 +761,7 @@ async function telaInicio(){
         </select>
       </label>
       <div id="lojaInfo" class="s" style="font-size:12.5px;color:var(--cinza);margin:-8px 0 6px"></div>
+      <div id="lojaVenc" style="font-size:12.5px;margin:0 0 8px"></div>
       <button type="button" class="btn sec pq oculto" id="bDadosLoja" style="margin-bottom:10px">${ICO.pino} Ver dados da loja</button>
 
       <label class="campo" style="margin-top:14px"><span>Matrícula do gerente que acompanhou</span>
@@ -781,6 +805,8 @@ async function telaInicio(){
   const atualizarInfoLoja = () => {
     const l = encontrarLoja($loja.value);
     $info.textContent = l ? (l.endereco || 'Endereço não cadastrado.') : '';
+    document.getElementById('lojaVenc').innerHTML = l ? vencimentos(l).map(x =>
+      `<div style="color:${x.atrasado ? 'var(--vermelho)' : 'var(--cinza)'};font-weight:${x.atrasado ? 600 : 400}">${esc(x.texto)}</div>`).join('') : '';
     $bDadosLoja.classList.toggle('oculto', !l);
     $bDadosLoja.onclick = l ? () => abrirDadosLoja(l) : null;
   };
