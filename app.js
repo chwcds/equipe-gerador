@@ -44,7 +44,7 @@ const BD = (() => {
 /* ===================== versão =====================
    Mostrada na tela inicial para conferir se o aparelho está com a versão publicada.
    A cada publicação: trocar aqui e no CACHE do sw.js. */
-const VERSAO_APP = '33';
+const VERSAO_APP = '34';
 const DATA_VERSAO = '16/11/2026';
 
 /* ===================== estado ===================== */
@@ -504,7 +504,7 @@ function abrirDadosLoja(loja){
     <div class="modal-caixa">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
         <div style="flex:1;min-width:0">
-          <div style="font-weight:700;font-size:16px">${esc(loja.cod)} — ${esc(loja.nome)}</div>
+          <div style="font-weight:700;font-size:16px">${esc(loja.cod)}${loja.cod_bh ? ' / ' + esc(loja.cod_bh) : ''} — ${esc(loja.nome)}</div>
         </div>
         <button type="button" class="btn-voltar" id="bFecharDadosLoja" style="background:var(--fundo);color:var(--texto)" aria-label="Fechar">${ICO.fechar}</button>
       </div>
@@ -788,13 +788,13 @@ async function telaInicio(){
   const $busca = document.getElementById('fBuscaLoja');
   const normalizar = t => String(t || '').normalize('NFD').replace(ACENTOS, '').toUpperCase().trim();
   const numCod = c => { const n = parseInt(String(c).replace(/\D/g, ''), 10); return isNaN(n) ? Infinity : n; };
-  // lista em ordem de código (D002, D003, ... / L001, L002, ...); a busca filtra por código ou nome
+  // lista em ordem de código (D002, D003, ... / L001, L002, ...); a busca filtra por código, código BH (cod_bh) ou nome
   const montarListaLojas = (manterSelecao) => {
     const redeSelecionada = $rede.value;
     const termo = normalizar($busca.value);
     const anterior = manterSelecao ? $loja.value : '';
     let lista = (CFG.lojas || []).filter(l => !redeSelecionada || l.rede === redeSelecionada);
-    if (termo) lista = lista.filter(l => normalizar(l.cod).includes(termo) || normalizar(l.nome).includes(termo));
+    if (termo) lista = lista.filter(l => normalizar(l.cod).includes(termo) || normalizar(l.cod_bh).includes(termo) || normalizar(l.nome).includes(termo));
     lista.sort((a, b) => (numCod(a.cod) - numCod(b.cod)) || String(a.cod).localeCompare(String(b.cod)));
     const frag = document.createDocumentFragment();
     const vazio = document.createElement('option'); vazio.value = '';
@@ -803,7 +803,7 @@ async function telaInicio(){
     lista.forEach(l => {
       const opt = document.createElement('option');
       opt.value = l.cod;
-      opt.textContent = `${l.cod} — ${l.nome}`;
+      opt.textContent = `${l.cod}${l.cod_bh ? ' / ' + l.cod_bh : ''} — ${l.nome}`;
       frag.appendChild(opt);
     });
     $loja.replaceChildren(frag);
