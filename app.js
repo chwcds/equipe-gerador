@@ -1,4 +1,4 @@
-/* Equipe Gerador — DMA · app de campo offline
+/* Equipe Gerador — Supermercados BH · app de campo offline
    Cada visita é um registro independente, com geolocalização própria. */
 'use strict';
 
@@ -44,7 +44,7 @@ const BD = (() => {
 /* ===================== versão =====================
    Mostrada na tela inicial para conferir se o aparelho está com a versão publicada.
    A cada publicação: trocar aqui e no CACHE do sw.js. */
-const VERSAO_APP = '41';
+const VERSAO_APP = '42';
 const DATA_VERSAO = '16/11/2026';
 
 /* ===================== estado ===================== */
@@ -748,7 +748,7 @@ async function telaInicio(){
   const nNaoEnviados = todas.filter(v => v.finalizada && !v.compartilhadoEm).length;
 
   montarTela({
-    titulo: 'Equipe Gerador', sub: `Grupo DMA · versão ${VERSAO_APP}`,
+    titulo: 'Equipe Gerador', sub: `Supermercados BH · versão ${VERSAO_APP}`,
     html: `
     <div class="atalhos">
       <button type="button" class="btn sec" id="bAndamento">Em andamento${nAndamento ? ` <b>${nAndamento}</b>` : ''}</button>
@@ -1387,7 +1387,7 @@ async function gerarPDF(v){
   const doc = new jsPDF({unit:'mm', format:'a4', compress:true});
   const PW = doc.internal.pageSize.getWidth(), PH = doc.internal.pageSize.getHeight();
   const ML = 14, MR = 14, MT = 24, MB = 16, CW = PW - ML - MR;
-  doc.setProperties({title: nomeArquivoRelatorio(v), subject: chk.titulo, author: v.tecnico, creator: 'Equipe Gerador — Grupo DMA'});
+  doc.setProperties({title: nomeArquivoRelatorio(v), subject: chk.titulo, author: v.tecnico, creator: 'Equipe Gerador — Supermercados BH'});
 
   // cabeçalho e rodapé repetidos em toda página
   const cabecalho = () => {
