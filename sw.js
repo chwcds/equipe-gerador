@@ -1,6 +1,6 @@
 /* Service worker — deixa o app abrir sem internet e abrir RÁPIDO com internet fraca.
    Ao publicar uma versão nova, troque o número em CACHE. */
-const CACHE = 'equipe-gerador-v41';
+const CACHE = 'equipe-gerador-v42';
 const ARQUIVOS = [
   './', './index.html', './app.js', './checklists.json', './lojas.json', './manifest.webmanifest',
   './logo.png', './logo-bh.svg', './icon-192.png', './icon-512.png', './icon.svg',
