@@ -1,7 +1,7 @@
 {
-  "name": "Equipe Gerador — DMA",
+  "name": "Equipe Gerador — Supermercados BH",
   "short_name": "Equipe Gerador",
-  "description": "Checklists de inspeção e manutenção de geradores, subestações e bancos de capacitores do Grupo DMA.",
+  "description": "Checklists de inspeção e manutenção de geradores, subestações e bancos de capacitores do Supermercados BH.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
