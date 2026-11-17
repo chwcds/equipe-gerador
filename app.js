@@ -44,7 +44,7 @@ const BD = (() => {
 /* ===================== versão =====================
    Mostrada na tela inicial para conferir se o aparelho está com a versão publicada.
    A cada publicação: trocar aqui e no CACHE do sw.js. */
-const VERSAO_APP = '39';
+const VERSAO_APP = '40';
 const DATA_VERSAO = '16/11/2026';
 
 /* ===================== estado ===================== */
@@ -487,24 +487,44 @@ async function salvar(){
 /* preventiva e bateria: o lojas.json traz a data da última preventiva (ult_preventiva) e da última
    troca de bateria (ult_bateria), em AAAA-MM-DD; o vencimento é calculado na hora, pelo calendário. */
 const DIAS_PREVENTIVA = 180, ANOS_BATERIA = 3;
+const BLOCO_MANUT = 'Manutencao';   // bloco da base central com as datas gravadas pelos relatórios de preventiva
 function vencimentos(loja){
   const dia = s => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(s || '')); return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null; };
   const fmt = d => `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
   const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
   const out = [];
-  const p = dia(loja && loja.ult_preventiva);
+  // vale a data mais recente entre a do lojas.json e a gravada na base central por um relatório de preventiva
+  const man = (loja && loja.dadosTecnicos && loja.dadosTecnicos[BLOCO_MANUT]) || {};
+  const maisRecente = (a, b) => [a, b].filter(Boolean).sort().pop() || '';
+  const p = dia(maisRecente(loja && loja.ult_preventiva, man.ult_preventiva));
   if (p){
     const v = new Date(p.getFullYear(), p.getMonth(), p.getDate() + DIAS_PREVENTIVA);
     out.push({tipo: 'Preventiva', ultima: fmt(p), vence: fmt(v), atrasado: v < hoje,
       texto: v < hoje ? `Preventiva atrasada desde ${fmt(v)}` : `Próxima preventiva: ${fmt(v)}`});
   }
-  const b = dia(loja && loja.ult_bateria);
+  const b = dia(maisRecente(loja && loja.ult_bateria, man.ult_bateria));
   if (b){
     const v = new Date(b.getFullYear() + ANOS_BATERIA, b.getMonth(), b.getDate());
     out.push({tipo: 'Bateria', ultima: fmt(b), vence: fmt(v), atrasado: v < hoje,
       texto: v < hoje ? `Troca de bateria atrasada desde ${fmt(v)}` : `Próxima troca de bateria: ${fmt(v)}`});
   }
   return out;
+}
+/* preventiva finalizada: grava na base central a data da última preventiva (e da troca de bateria,
+   se alguma foi trocada) no bloco "Manutencao" da loja, para o aviso se atualizar em todos os aparelhos */
+function registrarManutencao(v){
+  if (!v || v.checklist !== 'preventiva' || !v.loja) return;
+  const l = encontrarLoja(v.loja.cod);
+  if (!l) return;
+  const d = new Date(v.criadoEm);
+  if (isNaN(d)) return;
+  const data = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const dados = Object.assign({}, (l.dadosTecnicos && l.dadosTecnicos[BLOCO_MANUT]) || {});
+  if (!dados.ult_preventiva || dados.ult_preventiva < data) dados.ult_preventiva = data;
+  const trocadas = v.respostas && v.respostas.pg_int_qtd_baterias_trocadas;
+  if (trocadas && trocadas !== 'Nenhuma' && (!dados.ult_bateria || dados.ult_bateria < data)) dados.ult_bateria = data;
+  aplicarDadosTecnicos(`${v.loja.cod}|${BLOCO_MANUT}`, dados);
+  enfileirarCentral({tipo:'dadosTecnicos', cod:v.loja.cod, bloco:BLOCO_MANUT, dados, tecnico:v.tecnico||'', criadoEm:new Date().toISOString()});
 }
 const TEL_CEMIG = '08007232827';
 const CNPJ_MATRIZ_BH = '04641376000136';   // lojas do BH: a concessionária pede só o CNPJ da matriz
@@ -1311,6 +1331,7 @@ function telaRevisao(){
     visita.emitidoEm = new Date().toISOString();
     await salvar();
     enviarRelatorioCentral(visita);
+    registrarManutencao(visita);
     telaRelatorio();
   };
 }
